@@ -36,8 +36,7 @@ add_library(marky ${marky_srcs})
 target_link_libraries(marky ${marky_libs})
 
 include (InstallRequiredSystemLibraries)
-set(CPACK_RESOURCE_FILE_LICENSE
-  "${CMAKE_CURRENT_SOURCE_DIR}/LICENCE.txt")
+set(CPACK_RESOURCE_FILE_LICENSE "../LICENCE.txt")
 set(CPACK_PACKAGE_VERSION_MAJOR "${marky_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${marky_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${marky_VERSION_PATCH}")

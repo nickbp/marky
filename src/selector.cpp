@@ -36,9 +36,9 @@ namespace marky {
 }
 
 marky::selector_t marky::selectors::best_always() {
-	return std::bind(&marky::select_best, _1);
+	return std::bind(&marky::select_best, std::placeholders::_1);
 }
 
 marky::selector_t marky::selectors::best_weighted(double weight_factor/*=0.0*/) {
-	return std::bind(&marky::select_weighted, _1, weight_factor);
+	return std::bind(&marky::select_weighted, std::placeholders::_1, weight_factor);
 }

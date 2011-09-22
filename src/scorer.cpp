@@ -37,19 +37,22 @@ namespace marky {
 }
 
 marky::scorer_t marky::scorers::no_adj() {
-	return std::bind(&marky::score_no_adj, _1, _2);
+	return std::bind(&marky::score_no_adj,
+			std::placeholders::_1, std::placeholders::_2);
 }
 
 marky::scorer_t marky::scorers::link_adj(size_t score_decrement_links) {
 	if (score_decrement_links == 0) {
 		return no_adj();
 	}
-	return std::bind(&marky::score_link_adj, _1, _2, score_decrement_links);
+	return std::bind(&marky::score_link_adj,
+			std::placeholders::_1, std::placeholders::_2, score_decrement_links);
 }
 
 marky::scorer_t marky::scorers::time_adj(time_t score_decrement_time) {
 	if (score_decrement_time == 0) {
 		return no_adj();
 	}
-	return std::bind(&marky::score_time_adj, _1, _2, score_decrement_time);
+	return std::bind(&marky::score_time_adj,
+			std::placeholders::_1, std::placeholders::_2, score_decrement_time);
 }
