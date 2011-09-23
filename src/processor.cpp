@@ -18,77 +18,70 @@
 
 #include "processor.h"
 
-bool marky::Processor::insert(const lines_t& lines) {
-	info_t cur_info;
-	if (!backend->get_info(cur_info)) {
-		return false;
-	}
-	for (lines_t::const_iterator line_iter = lines.begin();
-		 line_iter != lines.end(); ++line_iter) {
-		const line_t& line = *line_iter;
-		if (line.empty()) { continue; }
+bool marky::Processor::insert(const line_t& line) {
+	if (line.empty()) { return true; }
 
-		line_t::const_iterator
-			last_word = line.begin(),
-			cur_word = ++line.begin();
+	line_t::const_iterator
+		last_word = line.begin(),
+		cur_word = ++line.begin();
 
-		while (cur_word != line.end()) {
-			++cur_info.link;
-			link_t link;
-			if (backend->get_by_link(link, *last_word, *cur_word)) {
-				/* update score/info in link */
-				link.score = scorer(link, cur_info) + 1;
-
-				link.info.time = cur_info.time;
-				link.info.link = cur_info.link;
-			} else {
-				/* init fresh link */
-				link.first = *last_word;
-				link.second = *cur_word;
-
-				link.score = 1;
-
-				link.info.time = cur_info.time;
-				link.info.link = cur_info.link;
-			}
-			if (!backend->update_link(link)) {
-				return false;
-			}
-			++last_word;
-			++cur_word;
+	while (cur_word != line.end()) {
+		if (!backend->increment_link(scorer, *last_word, *cur_word)) {
+			return false;
 		}
+		++last_word;
+		++cur_word;
 	}
-	return backend->update_info(cur_info);
+	return true;
 }
 
 bool marky::Processor::produce(line_t& line,
 		const word_t& search/*=word_t()*/,
-		size_t length_limit/*=0*/) {
+		size_t length_limit_chars/*=1000*/) {
 	if (search.empty()) {
 		link_t rand;
 		if (!backend->get_random(rand)) {
 			return false;
 		}
-		return grow(line, rand.first, rand.second, length_limit);
+		return grow(line, rand->prev, rand->next, length_limit_chars);
 	} else {
-		return grow(line, search, search, length_limit);
+		return grow(line, search, search, length_limit_chars);
 	}
 }
 
 bool marky::Processor::grow(line_t& line,
 		const word_t& left, const word_t& right,
-		size_t length_limit/*=0*/) {
-	//TODO grow outward from this link until hit limit or empty prev/next
-	if (length_limit == 0) {
-		for (;;) {
-			//return false when hit empty prev/next:
-			//if (!grow_right && !grow_left) { break; }
+		size_t length_limit_chars) {
+	bool continue_left = true, continue_right = true;
+	size_t char_size = 0;
+	link_t link;
+	while (char_size < length_limit_chars &&
+			(continue_left || continue_right)) {
+		if (continue_right) {
+			if (!backend->get_next(link, selector, scorer, right)) {
+				return false;
+			}
+			if (link) {
+				const word_t& word = link->next;
+				char_size += word.size();
+				line.push_back(word);
+			} else {
+				continue_left = false;
+			}
 		}
-	} else {
-		while (line.size() < length_limit) {
-			//grow_right
-			if (line.size() >= length_limit) { break; }
-			//grow_left
+
+		if (continue_left) {
+			if (!backend->get_prev(link, selector, scorer, left)) {
+				return false;
+			}
+			if (link) {
+				const word_t& word = link->prev;
+				char_size += word.size();
+				line.push_front(word);
+			} else {
+				continue_right = false;
+			}
 		}
 	}
+	return true;
 }

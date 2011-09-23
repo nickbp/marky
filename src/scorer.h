@@ -24,10 +24,6 @@
 #include "link.h"
 
 namespace marky {
-	/* Calculate the adjusted score for a link.
-	   'link' is the PREVIOUS link and its info, 'info' is the CURRENT info */
-	typedef std::function<score_t (const link_t& link, const info_t& info)> scorer_t;
-
 	namespace scorers {
 		/* No adjustment, scores just increment sequentially as links are encountered. */
 		scorer_t no_adj();

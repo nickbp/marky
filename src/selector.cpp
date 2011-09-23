@@ -19,26 +19,39 @@
 #include "selector.h"
 
 namespace marky {
-	const link_t& select_best(const links_t& links) {
-		links_t::const_iterator best_iter = links.begin();
-		for (links_t::const_iterator iter = links.begin();
-			 iter != links.end(); ++iter) {
-			if (iter->score > best_iter->score) {
+	link_t select_best(const links_t& links, const scorer_t& scorer,
+			const state_t& state) {
+		if (links->empty()) { return link_t(); }
+
+		_links_t::const_iterator best_iter = links->begin();
+		score_t best_score = (*best_iter)->score(scorer, state);
+
+		for (_links_t::const_iterator iter = links->begin();
+			 iter != links->end(); ++iter) {
+			score_t score = (*iter)->score(scorer, state);
+			if (score > best_score) {
 				best_iter = iter;
+				best_score = score;
 			}
 		}
+
 		return *best_iter;
 	}
 
-	const link_t& select_weighted(const links_t& links, double /*weight_factor*/) {
-		return select_best(links);//TODO
+	link_t select_weighted(const links_t& links, const scorer_t& scorer,
+			const state_t& state, double /*weight_factor*/) {
+		return select_best(links, scorer, state);//TODO
 	}
 }
 
 marky::selector_t marky::selectors::best_always() {
-	return std::bind(&marky::select_best, std::placeholders::_1);
+	return std::bind(&marky::select_best,
+			std::placeholders::_1, std::placeholders::_2,
+			std::placeholders::_3);
 }
 
 marky::selector_t marky::selectors::best_weighted(double weight_factor/*=0.0*/) {
-	return std::bind(&marky::select_weighted, std::placeholders::_1, weight_factor);
+	return std::bind(&marky::select_weighted,
+			std::placeholders::_1, std::placeholders::_2,
+			std::placeholders::_3, weight_factor);
 }

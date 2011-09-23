@@ -19,26 +19,26 @@
 #include "scorer.h"
 
 namespace marky {
-	score_t score_no_adj(const link_t& link, const info_t&) {
-		return link.score;/* THAT WAS EASY... */
+	score_t score_no_adj(score_t score, const _state_t&, const state_t&) {
+		return score;/* THAT WAS EASY... */
 	}
 
-	score_t score_link_adj(const link_t& link, const info_t& info,
-			size_t subtract_factor) {
-		double ret = link.score - ((info.link - link.info.link) / (double)subtract_factor);
+	score_t score_link_adj(score_t score, const _state_t& score_state,
+			const state_t& cur_state, size_t subtract_factor) {
+		double ret = score - ((cur_state->link - score_state.link) / (double)subtract_factor);
 		return (ret < 0) ? 0 : ret;/* implicit floor */
 	}
 
-	score_t score_time_adj(const link_t& link, const info_t& info,
-			time_t subtract_factor) {
-		double ret = link.score - ((info.time - link.info.time) / (double)subtract_factor);
+	score_t score_time_adj(score_t score, const _state_t& score_state,
+			const state_t& cur_state, time_t subtract_factor) {
+		double ret = score - ((cur_state->time - score_state.time) / (double)subtract_factor);
 		return (ret < 0) ? 0 : ret;/* implicit floor */
 	}
 }
 
 marky::scorer_t marky::scorers::no_adj() {
 	return std::bind(&marky::score_no_adj,
-			std::placeholders::_1, std::placeholders::_2);
+			std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 }
 
 marky::scorer_t marky::scorers::link_adj(size_t score_decrement_links) {
@@ -46,7 +46,8 @@ marky::scorer_t marky::scorers::link_adj(size_t score_decrement_links) {
 		return no_adj();
 	}
 	return std::bind(&marky::score_link_adj,
-			std::placeholders::_1, std::placeholders::_2, score_decrement_links);
+			std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
+			score_decrement_links);
 }
 
 marky::scorer_t marky::scorers::time_adj(time_t score_decrement_time) {
@@ -54,5 +55,6 @@ marky::scorer_t marky::scorers::time_adj(time_t score_decrement_time) {
 		return no_adj();
 	}
 	return std::bind(&marky::score_time_adj,
-			std::placeholders::_1, std::placeholders::_2, score_decrement_time);
+			std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
+			score_decrement_time);
 }

@@ -22,10 +22,12 @@
 #include <functional>
 
 #include "link.h"
+#include "scorer.h"
 
 namespace marky {
 	/* Select a link from a list according to some algorithm or criteria. */
-	typedef std::function<const link_t& (const links_t& links)> selector_t;
+	typedef std::function<link_t
+		(const links_t& links, const scorer_t& scorer, const state_t& cur_state)> selector_t;
 
 	namespace selectors {
 		/* Always returns the best link by score.

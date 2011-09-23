@@ -6,9 +6,9 @@ set(marky_VERSION_MAJOR 1)
 set(marky_VERSION_MINOR 0)
 set(marky_VERSION_PATCH 0)
 
-# Enable c++0x (this flag is g++-specific)
+# Enable c++0x and more warnings
 if(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "-std=c++0x")
+  set(CMAKE_CXX_FLAGS "-std=c++0x -Wall")
 endif()
 
 set(marky_srcs

@@ -52,8 +52,8 @@ namespace config {
 		VERSION_MINOR = @marky_VERSION_MINOR@,
 		VERSION_PATCH = @marky_VERSION_PATCH@;
 
-	static const char* VERSION_STRING = "@marky_VERSION_MAJOR@.@marky_VERSION_MINOR@.@marky_VERSION_PATCH@";
-	static const char* BUILD_DATE = __TIMESTAMP__;
+	static const char VERSION_STRING[] = "@marky_VERSION_MAJOR@.@marky_VERSION_MINOR@.@marky_VERSION_PATCH@";
+	static const char BUILD_DATE[] = __TIMESTAMP__;
 
 	extern bool debug_enabled;
 	extern FILE *fout;

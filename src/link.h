@@ -23,25 +23,59 @@
 #include <time.h>//time_t
 
 #include <string>
+#include <memory>
 #include <list>
 
 namespace marky {
 	typedef std::string word_t;
 	typedef size_t score_t;
 
-	typedef struct _info_t {
+	/* A container for the current state of the backend.
+	   Used by scorers to adjust a link's score */
+	struct _state_t {
+		_state_t(time_t time, size_t link)
+			: time(time), link(link) { }
 		time_t time;
 		size_t link;
-	} info_t;
+	};
+	typedef std::shared_ptr<_state_t> state_t;
 
-	typedef struct _link_t {
-		word_t first;
-		word_t second;
+	class Link;
+	/* Calculate the adjusted score for a link.
+	   'link' is the PREVIOUS link and its state, 'state' is the CURRENT state */
+	typedef std::function<score_t
+		(score_t score, const _state_t& score_state, const state_t& cur_state)> scorer_t;
 
-		info_t info;
-		score_t score;
-	} link_t;
-	typedef std::list<link_t> links_t;
+	class Link {
+	public:
+		Link(const word_t& prev, const word_t& next,
+				time_t time, size_t link, score_t score = 1)
+			: prev(prev), next(next), state_(time, link), score_(score) { }
+
+		inline score_t score(scorer_t scorer, const state_t& cur_state) const {
+			return scorer(score_, state_, cur_state);
+		}
+		inline score_t readjust(scorer_t scorer, const state_t& cur_state) {
+			score_ = scorer(score_, state_, cur_state);
+			state_ = *cur_state;
+			return score_;
+		}
+		inline void increment(scorer_t scorer, const state_t& cur_state) {
+			readjust(scorer, cur_state);
+			++score_;
+		}
+
+		const word_t prev;
+		const word_t next;
+
+	private:
+		_state_t state_;
+		score_t score_;
+	};
+	typedef std::shared_ptr<Link> link_t;
+
+	typedef std::list<link_t> _links_t;//TODO need a struct which indexes by prev/next and has a sorted list by score
+	typedef std::shared_ptr<_links_t> links_t;
 }
 
 #endif

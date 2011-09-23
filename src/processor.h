@@ -20,7 +20,6 @@
 */
 
 #include "backend.h"
-#include "scorer.h"
 #include "selector.h"
 
 namespace marky {
@@ -29,19 +28,21 @@ namespace marky {
 
 	class Processor {
 	public:
-		Processor(backend_t backend, scorer_t scorer, selector_t selector) : backend(backend) { }
+		Processor(backend_t backend, selector_t selector, scorer_t scorer)
+			: backend(backend), selector(selector), scorer(scorer) { }
 
-		bool insert(const lines_t& lines);
+		bool insert(const line_t& line);
+
 		bool produce(line_t& line, const word_t& search = word_t(),
-				size_t length_limit = 0);
+				size_t length_limit_chars = 1000);
 
 	private:
 		bool grow(line_t& line, const word_t& left, const word_t& right,
-				size_t length_limit = 0);
+				size_t length_limit_chars);
 
 		const backend_t backend;
-		const scorer_t scorer;
 		const selector_t selector;
+		const scorer_t scorer;
 	};
 }
 
