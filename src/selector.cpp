@@ -26,8 +26,9 @@ namespace marky {
 		_links_t::const_iterator best_iter = links->begin();
 		score_t best_score = (*best_iter)->score(scorer, state);
 
+		const _links_t::const_iterator& end = links->end();
 		for (_links_t::const_iterator iter = links->begin();
-			 iter != links->end(); ++iter) {
+			 iter != end; ++iter) {
 			score_t score = (*iter)->score(scorer, state);
 			if (score > best_score) {
 				best_iter = iter;

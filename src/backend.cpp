@@ -94,14 +94,45 @@ bool marky::Backend_Map::increment_link(scorer_t scorer,
 }
 
 bool marky::Backend_Map::prune(scorer_t scorer) {
-	for (words_to_link_t::iterator iter = words.begin();
-		 iter != words.end(); ++iter) {
-		score_t score = iter->second->readjust(scorer, state);
+	const words_to_link_t::iterator& words_end = words.end();
+	for (words_to_link_t::iterator words_iter = words.begin();
+		 words_iter != words_end; ++words_iter) {
+		score_t score = words_iter->second->readjust(scorer, state);
 		if (score == 0) {
-			/* remove from maps */
-			words.erase(iter);
-			prevs.erase(iter->second->prev);//TODO this removes multiple links! need to scan for just this one
-			nexts.erase(iter->second->next);//TODO this removes multiple links! need to scan for just this one
+			/* remove from words */
+			words.erase(words_iter);
+
+			const word_t&
+				prev = words_iter->second->prev,
+				next = words_iter->second->next;
+
+			/* remove from prevs (find matching next) */
+			word_to_links_t::iterator prevs_iter = prevs.find(prev);
+			if (prevs_iter != prevs.end()) {
+				const links_t& searchme = prevs_iter->second;
+				const _links_t::iterator& links_end = searchme->end();
+				for (_links_t::iterator links_iter = searchme->begin();
+					 links_iter != links_end; ++links_iter) {
+					if ((*links_iter)->next == next) {
+						searchme->erase(links_iter);
+						break;
+					}
+				}
+			}
+
+			/* remove from nexts (find matching prev) */
+			word_to_links_t::iterator nexts_iter = nexts.find(next);
+			if (nexts_iter != nexts.end()) {
+				const links_t& searchme = nexts_iter->second;
+				const _links_t::iterator& links_end = searchme->end();
+				for (_links_t::iterator links_iter = searchme->begin();
+					 links_iter != links_end; ++links_iter) {
+					if ((*links_iter)->prev == prev) {
+						searchme->erase(links_iter);
+						break;
+					}
+				}
+			}
 		}
 	}
 	return true;
