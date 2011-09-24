@@ -74,7 +74,7 @@ namespace marky {
 	};
 	typedef std::shared_ptr<Link> link_t;
 
-	typedef std::list<link_t> _links_t;//TODO need a struct which indexes by prev/next and has a sorted list by score
+	typedef std::list<link_t> _links_t;
 	typedef std::shared_ptr<_links_t> links_t;
 }
 
