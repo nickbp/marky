@@ -41,15 +41,20 @@ bool marky::Marky::produce(line_t& line,
 	if (search.empty()) {
 		link_t rand;
 		if (!backend->get_random(rand)) {
-			line.clear();
-			return true;
+			return false;
 		}
 		line.push_back(rand->prev);
 		line.push_back(rand->next);
 		return grow(line, length_limit_chars);
 	} else {
 		line.push_back(search);
-		return grow(line, length_limit_chars);
+		if (!grow(line, length_limit_chars)) {/* backend err */
+			line.clear();
+			return false;
+		} else if (line.size() == 1) {/* didn't find 'search' */
+			line.clear();
+		}
+		return true;
 	}
 }
 
