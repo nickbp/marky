@@ -41,7 +41,8 @@ bool marky::Marky::produce(line_t& line,
 	if (search.empty()) {
 		link_t rand;
 		if (!backend->get_random(rand)) {
-			return false;
+			line.clear();
+			return true;
 		}
 		line.push_back(rand->prev);
 		line.push_back(rand->next);

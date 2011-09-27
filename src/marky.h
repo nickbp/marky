@@ -30,15 +30,15 @@ namespace marky {
 	 * just a toy project. */
 	class Marky {
 	public:
-		Marky(backend_t backend, selector_t selector, scorer_t scorer)
+		Marky(backend_t backend, selector_t selector, scorer_t scorer)//TODO hide these better, maybe as enums?
 			: backend(backend), selector(selector), scorer(scorer) { }
 
 		/* Adds the line (and its inter-word links) to the dataset. */
 		bool insert(const line_t& line);
 
 		/* Produces a line from the search word, or from a random word if the
-		 * search word is unspecified. Returns false if the search word wasn't
-		 * found or in the event of an error. */
+		 * search word is unspecified. Produces an empty line if the search word
+		 * wasn't found. Returns false in the event of some other error. */
 		bool produce(line_t& line, const word_t& search = word_t(),
 				size_t length_limit_chars = 1000);
 
