@@ -19,10 +19,36 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "backend.h"
+#include "selector.h"
+
 namespace marky {
+	typedef std::list<word_t> line_t;
+
+	/* Marky is a simple but fairly modular library for creating markov chains
+	 * from arbitrary text. There are likely better libraries available; this is
+	 * just a toy project. */
 	class Marky {
 	public:
-		//TODO accepts raw data and a filter to get lines from it (which are then passed to processor)
+		Marky(backend_t backend, selector_t selector, scorer_t scorer)
+			: backend(backend), selector(selector), scorer(scorer) { }
+
+		/* Adds the line (and its inter-word links) to the dataset. */
+		bool insert(const line_t& line);
+
+		/* Produces a line from the search word, or from a random word if the
+		 * search word is unspecified. Returns false if the search word wasn't
+		 * found or in the event of an error. */
+		bool produce(line_t& line, const word_t& search = word_t(),
+				size_t length_limit_chars = 1000);
+
+	private:
+		/* Grows a line in both directions until length has been reached. */
+		bool grow(line_t& line, size_t length_limit_chars);
+
+		const backend_t backend;
+		const selector_t selector;
+		const scorer_t scorer;
 	};
 }
 

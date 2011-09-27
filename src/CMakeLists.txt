@@ -19,8 +19,6 @@ set(marky_srcs
   link.h
   marky.h
   marky.cpp
-  processor.h
-  processor.cpp
   scorer.h
   scorer.cpp
   selector.h
