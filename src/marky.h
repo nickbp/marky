@@ -30,7 +30,7 @@ namespace marky {
 	 * just a toy project. */
 	class Marky {
 	public:
-		Marky(backend_t backend, selector_t selector, scorer_t scorer)//TODO hide these better, maybe as enums?
+		Marky(backend_t backend, selector_t selector, scorer_t scorer)
 			: backend(backend), selector(selector), scorer(scorer) { }
 
 		/* Adds the line (and its inter-word links) to the dataset. */

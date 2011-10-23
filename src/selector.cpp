@@ -18,6 +18,8 @@
 
 #include "selector.h"
 
+#include <stdlib.h> /* rand() */
+
 namespace marky {
 	link_t select_best(const links_t& links, const scorer_t& scorer,
 			const state_t& state) {
@@ -41,7 +43,27 @@ namespace marky {
 
 	link_t select_weighted(const links_t& links, const scorer_t& scorer,
 			const state_t& state, double /*weight_factor*/) {
-		return select_best(links, scorer, state);//TODO
+		/* first pass: get sum score from which to derive 'select' */
+		score_t sum_score = 0;
+		const _links_t::const_iterator& end = links->end();
+		for (_links_t::const_iterator iter = links->begin();
+			 iter != end; ++iter) {
+			sum_score += (*iter)->score(scorer, state);
+		}
+
+		score_t select = rand() * sum_score / (double)RAND_MAX;
+
+		/* second pass: subtract scores from select, return when select hits 0 */
+		const _links_t::const_iterator& end = links->end();
+		for (_links_t::const_iterator iter = links->begin();
+			 iter != end; ++iter) {
+			score_t s = (*iter)->score(scorer, state);
+			if (select < s) {
+				return *iter;
+			}
+			select -= s;
+		}
+		return link_t();
 	}
 }
 
