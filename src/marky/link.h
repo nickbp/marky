@@ -42,9 +42,10 @@ namespace marky {
 
 	class Link;
 	/* Calculate the adjusted score for a link.
-	   'link' is the PREVIOUS link and its state, 'state' is the CURRENT state */
+	   'score_state' is the backend state from the last time the link was encountered,
+	   'cur_state' is the backend state from right now. */
 	typedef std::function<score_t
-		(score_t score, const _state_t& score_state, const state_t& cur_state)> scorer_t;
+		(score_t score, const _state_t& last_score_state, const _state_t& now_state)> scorer_t;
 
 	class Link {
 	public:
@@ -52,17 +53,13 @@ namespace marky {
 				time_t time, size_t link, score_t score = 1)
 			: prev(prev), next(next), state_(time, link), score_(score) { }
 
-		inline score_t score(scorer_t scorer, const state_t& cur_state) const {
-			return scorer(score_, state_, cur_state);
-		}
-		inline score_t readjust(scorer_t scorer, const state_t& cur_state) {
-			score_ = scorer(score_, state_, cur_state);
-			state_ = *cur_state;
-			return score_;
+		inline score_t score(scorer_t scorer, const state_t& cur_state) {
+			return scorer(score_, state_, *cur_state);
 		}
 		inline void increment(scorer_t scorer, const state_t& cur_state) {
-			readjust(scorer, cur_state);
-			++score_;
+			score_ = 1 + score(scorer, cur_state);
+			/* reset the state 'clock' to now */
+			state_ = *cur_state;
 		}
 
 		const word_t prev;

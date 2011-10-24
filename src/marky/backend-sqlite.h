@@ -1,5 +1,5 @@
-#ifndef MARKY_SCORER_H
-#define MARKY_SCORER_H
+#ifndef MARKY_BACKEND_SQLITE_H
+#define MARKY_BACKEND_SQLITE_H
 
 /*
   marky - A Markov chain generator.
@@ -19,21 +19,26 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <functional>
-
-#include "link.h"
+#include "backend.h"
 
 namespace marky {
-	namespace scorers {
-		/* No adjustment, scores just increment sequentially as links are encountered. */
-		scorer_t no_adj();
+	/* A backend which uses a sqlite3 database for storing persistent state. */
+	class Backend_SQLite : public IBackend {//TODO import to map at start, export to map at end? (would expect it to be much faster at the cost of memory)
+	public:
+		Backend_SQLite(const std::string& db_file_path);
 
-		/* Adjusts scores to slowly decrease as other links are encountered. */
-		scorer_t link_adj(size_t score_decrement_links);
+		bool get_random(scorer_t scorer, link_t& random);
 
-		/* Adjusts scores to slowly decrease as time passes. */
-		scorer_t time_adj(time_t score_decrement_time);
-	}
+		bool get_prev(selector_t selector, scorer_t scorer,
+				const word_t& word, link_t& prev);
+		bool get_next(selector_t selector, scorer_t scorer,
+				const word_t& word, link_t& next);
+
+		bool increment_link(scorer_t scorer,
+				const word_t& first, const word_t& second);
+
+		bool prune(scorer_t scorer);
+	};
 }
 
 #endif

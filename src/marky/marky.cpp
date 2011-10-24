@@ -17,6 +17,14 @@
 */
 
 #include "marky.h"
+#include <assert.h>
+
+marky::Marky::Marky(backend_t backend, selector_t selector, scorer_t scorer)
+	: backend(backend), selector(selector), scorer(scorer) {
+	assert(backend);
+	assert(selector);
+	assert(scorer);
+}
 
 bool marky::Marky::insert(const line_t& line) {
 	if (line.empty()) { return true; }
@@ -40,7 +48,7 @@ bool marky::Marky::produce(line_t& line,
 		size_t length_limit_chars/*=1000*/) {
 	if (search.empty()) {
 		link_t rand;
-		if (!backend->get_random(rand)) {
+		if (!backend->get_random(scorer, rand)) {
 			return false;
 		}
 		line.push_back(rand->prev);
@@ -66,7 +74,7 @@ bool marky::Marky::grow(line_t& line, size_t length_limit_chars) {
 	while (char_size < length_limit_chars &&
 			(continue_left || continue_right)) {
 		if (continue_right) {
-			if (!backend->get_next(link, selector, scorer, line.back())) {
+			if (!backend->get_next(selector, scorer, line.back(), link)) {
 				return false;
 			}
 			if (link) {
@@ -79,7 +87,7 @@ bool marky::Marky::grow(line_t& line, size_t length_limit_chars) {
 		}
 
 		if (continue_left) {
-			if (!backend->get_prev(link, selector, scorer, line.front())) {
+			if (!backend->get_prev(selector, scorer, line.front(), link)) {
 				return false;
 			}
 			if (link) {

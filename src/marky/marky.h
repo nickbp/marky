@@ -30,8 +30,8 @@ namespace marky {
 	 * just a toy project. */
 	class Marky {
 	public:
-		Marky(backend_t backend, selector_t selector, scorer_t scorer)
-			: backend(backend), selector(selector), scorer(scorer) { }
+		/* Sets up a Marky instance using the specified components. */
+		Marky(backend_t backend, selector_t selector, scorer_t scorer);
 
 		/* Adds the line (and its inter-word links) to the dataset. */
 		bool insert(const line_t& line);

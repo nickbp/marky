@@ -18,43 +18,47 @@
 
 #include <time.h>
 
-#include "backend.h"
+#include "backend-map.h"
 
 marky::Backend_Map::Backend_Map() {
 	state.reset(new _state_t(time(NULL), 0));
 }
 
-bool marky::Backend_Map::get_random(link_t& random) {
+bool marky::Backend_Map::get_random(scorer_t scorer, link_t& random) {
 	/* cheat: just return the most recently updated link
 	   (easier than figuring out a random value from an unordered_map) */
-	if (last_link) {
+	if (last_link &&
+			last_link->score(scorer, state) != 0) {
+		/* just in case, make sure the link still has a score
+		   (if it doesn't, nothing does) */
 		random = last_link;
-		return true;
+	} else {
+		random.reset();
 	}
-	return false;
+	return true;
 }
-bool marky::Backend_Map::get_prev(link_t& prev,
-		selector_t selector, scorer_t scorer,
-		const word_t& word) {
+
+bool marky::Backend_Map::get_prev(selector_t selector, scorer_t scorer,
+		const word_t& word, link_t& prev) {
 	word_to_links_t::const_iterator iter = prevs.find(word);
 	if (iter == prevs.end()) {
 		prev.reset();
-		return true;
+	} else {
+		prev = selector(iter->second, scorer, state);
 	}
-	prev = selector(iter->second, scorer, state);
 	return true;
 }
-bool marky::Backend_Map::get_next(link_t& next,
-		selector_t selector, scorer_t scorer,
-		const word_t& word) {
+bool marky::Backend_Map::get_next(selector_t selector, scorer_t scorer,
+		const word_t& word, link_t& next) {
 	word_to_links_t::const_iterator iter = nexts.find(word);
 	if (iter == nexts.end()) {
 		next.reset();
-		return true;
+	} else {
+		next = selector(iter->second, scorer, state);
 	}
-	next = selector(iter->second, scorer, state);
 	return true;
 }
+
 bool marky::Backend_Map::increment_link(scorer_t scorer,
 		const word_t& first, const word_t& second) {
 	std::pair<word_t, word_t> findme(first, second);
@@ -97,40 +101,42 @@ bool marky::Backend_Map::prune(scorer_t scorer) {
 	const words_to_link_t::iterator& words_end = words.end();
 	for (words_to_link_t::iterator words_iter = words.begin();
 		 words_iter != words_end; ++words_iter) {
-		score_t score = words_iter->second->readjust(scorer, state);
-		if (score == 0) {
-			/* remove from words */
-			words.erase(words_iter);
+		score_t score = words_iter->second->score(scorer, state);
+		if (score != 0) {
+			continue;
+		}
 
-			const word_t&
-				prev = words_iter->second->prev,
-				next = words_iter->second->next;
+		/* remove from words */
+		words.erase(words_iter);
 
-			/* remove from prevs (find matching next) */
-			word_to_links_t::iterator prevs_iter = prevs.find(prev);
-			if (prevs_iter != prevs.end()) {
-				const links_t& searchme = prevs_iter->second;
-				const _links_t::iterator& links_end = searchme->end();
-				for (_links_t::iterator links_iter = searchme->begin();
-					 links_iter != links_end; ++links_iter) {
-					if ((*links_iter)->next == next) {
-						searchme->erase(links_iter);
-						break;
-					}
+		const word_t&
+			prev = words_iter->second->prev,
+			next = words_iter->second->next;
+
+		/* remove from prevs (find matching next) */
+		word_to_links_t::iterator prevs_iter = prevs.find(prev);
+		if (prevs_iter != prevs.end()) {
+			const links_t& searchme = prevs_iter->second;
+			const _links_t::iterator& links_end = searchme->end();
+			for (_links_t::iterator links_iter = searchme->begin();
+				 links_iter != links_end; ++links_iter) {
+				if ((*links_iter)->next == next) {
+					searchme->erase(links_iter);
+					break;
 				}
 			}
+		}
 
-			/* remove from nexts (find matching prev) */
-			word_to_links_t::iterator nexts_iter = nexts.find(next);
-			if (nexts_iter != nexts.end()) {
-				const links_t& searchme = nexts_iter->second;
-				const _links_t::iterator& links_end = searchme->end();
-				for (_links_t::iterator links_iter = searchme->begin();
-					 links_iter != links_end; ++links_iter) {
-					if ((*links_iter)->prev == prev) {
-						searchme->erase(links_iter);
-						break;
-					}
+		/* remove from nexts (find matching prev) */
+		word_to_links_t::iterator nexts_iter = nexts.find(next);
+		if (nexts_iter != nexts.end()) {
+			const links_t& searchme = nexts_iter->second;
+			const _links_t::iterator& links_end = searchme->end();
+			for (_links_t::iterator links_iter = searchme->begin();
+				 links_iter != links_end; ++links_iter) {
+				if ((*links_iter)->prev == prev) {
+					searchme->erase(links_iter);
+					break;
 				}
 			}
 		}
