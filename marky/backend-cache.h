@@ -24,10 +24,34 @@
 #include "backend.h"
 
 namespace marky {
-	/* A simple one-off backend which loses state upon destruction. */
-	class Backend_Map : public IBackend {
+	/* Useful utils, used internally */
+
+	/*
+
+	template <typename MAP, typename VAL>
+	class map_value_iterator : public std::iterator<std::input_iterator_tag, VAL> {
 	public:
-		Backend_Map();
+		map_value_iterator(const typename MAP::const_iterator& iter) : iter(iter) { }
+		map_value_iterator& operator++() { ++iter; return *this; }
+		bool operator==(const map_value_iterator<MAP,VAL>& other) const {
+			return iter == other.iter;
+		}
+		bool operator!=(const map_value_iterator<MAP,VAL>& other) const {
+			return iter != other.iter;
+		}
+		const VAL& operator*() const { return iter->second; }
+		const VAL& operator->() const { return iter->second; }
+	private:
+		typename MAP::const_iterator iter;
+	};
+	*/
+
+	/* A cache wrapper around another IBackend. */
+
+	class Backend_Cache : public IBackend {
+	public:
+		Backend_Cache(backend_t backend);
+		virtual ~Backend_Cache();
 
 		bool get_random(scorer_t scorer, link_t& random);
 
@@ -43,9 +67,10 @@ namespace marky {
 
 	private:
 		state_t state;
-		link_t last_link;
+		link_t last_link;/* shortcut for get_random */
+
 		typedef std::unordered_map<word_t, links_t> word_to_links_t;
-		word_to_links_t prevs, nexts;
+		word_to_links_t prevs, nexts;/* prev OR next -> links */
 
 		template <typename T>
 		struct pair_hash {
@@ -53,14 +78,14 @@ namespace marky {
 			inline size_t operator()(const std::pair<T,T>& p) const {
 				return hash(p.first) ^ hash(p.second);
 			}
-
 		private:
 			const std::hash<T> hash;
 		};
+		typedef std::unordered_map<std::pair<word_t, word_t>,
+			link_t, pair_hash<word_t> > words_to_link_t;
+		words_to_link_t words;/* prev AND next -> link */
 
-		typedef std::unordered_map<std::pair<word_t,word_t>, link_t,
-			pair_hash<word_t> > words_to_link_t;
-		words_to_link_t words;
+		std::unordered_set<word_t> missing_prevs, missing_nexts;//TODO could this be merged into prevs/nexts/words? perhaps with null ptr for values?
 	};
 }
 

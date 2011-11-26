@@ -38,11 +38,12 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 set(MARKY_INCLUDES
-	${PROJECT_SOURCE_DIR}/src
-	${PROJECT_BINARY_DIR}/src
+	${PROJECT_SOURCE_DIR}
+	${PROJECT_BINARY_DIR}
 )
 
-add_subdirectory(src)
+add_subdirectory(apps)
+add_subdirectory(marky)
 if(BUILD_TESTS)
 	enable_testing()
 	add_subdirectory(tests)

@@ -30,7 +30,8 @@ namespace marky {
 	 * just a toy project. */
 	class Marky {
 	public:
-		/* Sets up a Marky instance using the specified components. */
+		/* Sets up a Marky instance using the specified components. The backend
+		 * MUST have already been successfully init()ed before being passed. */
 		Marky(backend_t backend, selector_t selector, scorer_t scorer);
 
 		/* Adds the line (and its inter-word links) to the dataset. */

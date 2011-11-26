@@ -21,8 +21,8 @@
 
 #include <stdio.h>
 
-#define _PRINT_PREFIX "%s %s  "
-#define _PRINT_ARGS __FUNCTION__
+#define _PRINT_PREFIX "%s (%s:%d) "
+#define _PRINT_ARGS __FUNCTION__, __LINE__
 
 /* Some simple print helpers */
 
@@ -46,13 +46,20 @@
 #define LOG_RAWDIR(...) config::_log(__VA_ARGS__)
 #define ERROR_RAWDIR(...) config::_error(__VA_ARGS__)
 
+#cmakedefine BUILD_BACKEND_SQLITE
+
 namespace config {
 	static const int
 		VERSION_MAJOR = @marky_VERSION_MAJOR@,
 		VERSION_MINOR = @marky_VERSION_MINOR@,
 		VERSION_PATCH = @marky_VERSION_PATCH@;
 
-	static const char VERSION_STRING[] = "@marky_VERSION_MAJOR@.@marky_VERSION_MINOR@.@marky_VERSION_PATCH@";
+
+	static const char VERSION_STRING[] = "@marky_VERSION_MAJOR@.@marky_VERSION_MINOR@.@marky_VERSION_PATCH@"
+#ifdef BUILD_BACKEND_SQLITE
+		"-sqlite"
+#endif
+		;
 	static const char BUILD_DATE[] = __TIMESTAMP__;
 
 	extern bool debug_enabled;
