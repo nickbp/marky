@@ -31,7 +31,8 @@ namespace marky {
 			const _state_t& now_state, size_t subtract_factor) {
 		/* use ceil: avoid reducing score before factor has actually been reached
 		   (5-link example: only decrement AFTER 5-link is reached) */
-		double ret = ceil(score - ((now_state.link - last_score_state.link) / (double)subtract_factor));
+		double ret = ceil(score -
+				((now_state.link - last_score_state.link) / (double)subtract_factor));
 		return (ret < 0) ? 0 : ret;
 	}
 
@@ -39,7 +40,8 @@ namespace marky {
 			const _state_t& now_state, time_t subtract_factor) {
 		/* use ceil: avoid reducing score before factor has actually been reached
 		   (5s example: only decrement AFTER 5s is reached) */
-		double ret = ceil(score - ((now_state.time - last_score_state.time) / (double)subtract_factor));
+		double ret = ceil(score -
+				((now_state.time - last_score_state.time) / (double)subtract_factor));
 		return (ret < 0) ? 0 : ret;
 	}
 }

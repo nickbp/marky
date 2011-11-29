@@ -99,6 +99,8 @@ TEST(Map, get_random) {
 	EXPECT_TRUE(backend.get_random(scorer, rand));
 	EXPECT_FALSE((bool)rand);
 
+	/* add two links, assume we'll be getting back the second one
+	   (if this changes, update the test) */
 	ASSERT_TRUE(backend.increment_link(scorer, "a", "b"));
 	ASSERT_TRUE(backend.increment_link(scorer, "c", "d"));
 	state_t state(new _state_t(2,2));

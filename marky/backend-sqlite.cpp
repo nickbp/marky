@@ -53,14 +53,14 @@
 \
 	"CREATE INDEX IF NOT EXISTS " LINKS_INDEX_PREV " ON " LINKS_TABLE " (" LINKS_COL_PREV ");" \
 	"CREATE INDEX IF NOT EXISTS " LINKS_INDEX_NEXT " ON " LINKS_TABLE " (" LINKS_COL_NEXT ");" \
-	"COMMIT"
+	"COMMIT TRANSACTION"
 
 #define QUERY_GET_STATE \
 	"SELECT " STATE_COL_TIME ", " STATE_COL_LINK " FROM " STATE_TABLE " LIMIT 1"
 #define QUERY_UPDATE_STATE \
-	"BEGIN TRANSACTION; DELETE FROM " STATE_TABLE "; INSERT INTO " STATE_TABLE " (" \
-	STATE_COL_TIME "," STATE_COL_LINK ") VALUES (?1, ?2); COMMIT;"
+	"UPDATE " STATE_TABLE " SET " STATE_COL_TIME "=?1, " STATE_COL_LINK "=?2"
 
+//TODO is this going to get one entry randomly, or sort things randomly and get one entry?
 #define QUERY_GET_RANDOM \
 	"SELECT " LINKS_COL_PREV ", " LINKS_COL_NEXT ", " \
 	LINKS_COL_TIME ", " LINKS_COL_LINK ", " LINKS_COL_SCORE \
@@ -85,6 +85,17 @@
 	"INSERT OR ROLLBACK INTO " LINKS_TABLE " (" \
 	LINKS_COL_PREV "," LINKS_COL_NEXT "," LINKS_COL_SCORE "," \
 	LINKS_COL_TIME "," LINKS_COL_LINK ") VALUES (?1,?2,?3,?4,?5)"
+
+#define QUERY_GET_ALL \
+	"SELECT " LINKS_COL_PREV ", " LINKS_COL_NEXT ", " \
+	LINKS_COL_TIME ", " LINKS_COL_LINK ", " LINKS_COL_SCORE \
+	" FROM " LINKS_TABLE
+
+#define QUERY_DELETE_BEGIN "BEGIN TRANSACTION"
+#define QUERY_DELETE_LINK \
+	"DELETE FROM " LINKS_TABLE " WHERE " \
+	LINKS_COL_PREV "=?1 AND " LINKS_COL_NEXT "=?2"
+#define QUERY_DELETE_END "COMMIT TRANSACTION"
 
 namespace {
 	bool exec(sqlite3* db, const char* cmd) {
@@ -145,15 +156,14 @@ marky::Backend_SQLite::~Backend_SQLite() {
 		if ((bool)state) {
 			/* update db state */
 			sqlite3_stmt* response = NULL;
-			if (!prepare(db, QUERY_UPDATE_STATE, response) &&
-					!bind_int64(response, 1, state->time) &&
-					!bind_int64(response, 1, state->link)) {
+			if (prepare(db, QUERY_UPDATE_STATE, response) &&
+					bind_int64(response, 1, state->time) &&
+					bind_int64(response, 2, state->link)) {
 				int step = sqlite3_step(response);
 				if (step != SQLITE_DONE) {
 					ERROR("Error when parsing response to '%s': %d\%s",
 							QUERY_UPDATE_STATE, step, sqlite3_errmsg(db));
 				}
-				sqlite3_reset(response);
 			}
 			sqlite3_finalize(response);
 		}
@@ -219,7 +229,7 @@ bool marky::Backend_SQLite::init() {
 	return ok;
 }
 
-bool marky::Backend_SQLite::get_random(scorer_t scorer, link_t& random) {
+bool marky::Backend_SQLite::get_random(scorer_t /*scorer*/, link_t& random) {
 	sqlite3_stmt* response = NULL;
 	if (!prepare(db, QUERY_GET_RANDOM, response)) {
 		return false;
@@ -229,14 +239,12 @@ bool marky::Backend_SQLite::get_random(scorer_t scorer, link_t& random) {
 	int step = sqlite3_step(response);
 	switch (step) {
 	case SQLITE_ROW:/* row found, parse */
-		{
-			_state_t link_state(sqlite3_column_int64(response, 2),
-					sqlite3_column_int64(response, 3));
-			random.reset(new Link((const char*)sqlite3_column_text(response, 0),
-							(const char*)sqlite3_column_text(response, 1),
-							link_state.time, link_state.link,
-							scorer(sqlite3_column_int64(response, 4), link_state, *state)));
-		}
+		/* this might produce a record with a zero score after scorer adjustment, oh well. */
+		random.reset(new Link((const char*)sqlite3_column_text(response, 0),
+						(const char*)sqlite3_column_text(response, 1),
+						sqlite3_column_int64(response, 2),
+						sqlite3_column_int64(response, 3),
+						sqlite3_column_int64(response, 4)));
 		break;
 	case SQLITE_DONE:/* nothing found, do nothing */
 		random.reset();
@@ -263,6 +271,7 @@ bool marky::Backend_SQLite::get_prev(selector_t selector, scorer_t scorer,
 	links_t links(new _links_t);
 	for (;;) {
 		int step = sqlite3_step(response);
+		/* use if instead of switch to easily break the for loop */
 		if (step == SQLITE_DONE) {
 			break;
 		} else if (step == SQLITE_ROW) {
@@ -299,6 +308,7 @@ bool marky::Backend_SQLite::get_next(selector_t selector, scorer_t scorer,
 	links_t links(new _links_t);
 	for (;;) {
 		int step = sqlite3_step(response);
+		/* use if instead of switch to easily break the for loop */
 		if (step == SQLITE_DONE) {
 			break;
 		} else if (step == SQLITE_ROW) {
@@ -333,19 +343,23 @@ bool marky::Backend_SQLite::increment_link(scorer_t scorer,
 		return false;
 	}
 
+	/* update time BEFORE link is added */
+	time_t now = time(NULL);
+	state->time = now;
+
 	bool ok = true;
 	int get_step = sqlite3_step(get_response);
 	switch (get_step) {
 	case SQLITE_ROW:/* entry found, score/update */
 		{
 			Link link(first, second,
+					sqlite3_column_int64(get_response, 0),
 					sqlite3_column_int64(get_response, 1),
-					sqlite3_column_int64(get_response, 2),
-					sqlite3_column_int64(get_response, 3));
-			link.increment(scorer, state);
+					sqlite3_column_int64(get_response, 2));
+
 			sqlite3_stmt* update_response = NULL;
 			if (!prepare(db, QUERY_UPDATE_LINK, update_response) ||
-					!bind_int64(update_response, 1, link.score(scorer, state)) ||
+					!bind_int64(update_response, 1, link.increment(scorer, state)) ||
 					!bind_int64(update_response, 2, state->time) ||
 					!bind_int64(update_response, 3, state->link) ||
 					!bind_str(update_response, 4, first) ||
@@ -389,9 +403,116 @@ bool marky::Backend_SQLite::increment_link(scorer_t scorer,
 	}
 	sqlite3_finalize(get_response);
 
+	/* increment link count AFTER link is added (first link gets id 0) */
+	++state->link;
+
 	return ok;
 }
 
 bool marky::Backend_SQLite::prune(scorer_t scorer) {
-	return false;//TODO SELECT *, then update/prune rows according to scorer. also update state
+	bool ok = true;
+	_links_t delme;
+	{
+		sqlite3_stmt* response = NULL;
+		if (!prepare(db, QUERY_GET_ALL, response)) {
+			return false;
+		}
+
+		for (;;) {
+			int step = sqlite3_step(response);
+			/* use if instead of switch to easily break the for loop */
+			if (step == SQLITE_DONE) {
+				break;
+			} else if (step == SQLITE_ROW) {
+				link_t link(new Link((const char*)sqlite3_column_text(response, 0),
+								(const char*)sqlite3_column_text(response, 1),
+								sqlite3_column_int64(response, 2),
+								sqlite3_column_int64(response, 3),
+								sqlite3_column_int64(response, 4)));
+				if (link->score(scorer, state) == 0) {
+					/* zero score; prune */
+					delme.push_back(link);
+				}
+			} else {
+				ok = false;
+				ERROR("Error when parsing response to '%s': %d/%s",
+						QUERY_GET_ALL, step, sqlite3_errmsg(db));
+				break;
+			}
+		}
+		sqlite3_finalize(response);
+	}
+
+	if (!ok) {
+		return false;
+	}
+	LOG("%lu to prune", delme.size());
+	if (delme.empty()) {
+		return true;/* nothing to prune! */
+	}
+
+	{
+		/* start transaction */
+		sqlite3_stmt* response = NULL;
+		if (!prepare(db, QUERY_DELETE_BEGIN, response)) {
+			ok = false;
+		} else {
+			int step = sqlite3_step(response);
+			if (step != SQLITE_DONE) {
+				ERROR("Error when parsing response to '%s': %d\%s",
+						QUERY_DELETE_BEGIN, step, sqlite3_errmsg(db));
+				ok = false;
+			}
+		}
+		sqlite3_finalize(response);
+	}
+
+	/* don't return false if !ok; really want to close the transaction */
+
+	{
+		/* delete links in delme */
+		sqlite3_stmt* response = NULL;
+		if (!prepare(db, QUERY_DELETE_LINK, response)) {
+			ok = false;
+		} else {
+			const _links_t::const_iterator end = delme.end();
+			for (_links_t::const_iterator iter = delme.begin();
+				 iter != end; ++iter) {
+				if (!bind_str(response, 1, (*iter)->prev) ||
+						!bind_str(response, 2, (*iter)->next)) {
+					ok = false;
+				}
+				int step = sqlite3_step(response);
+				if (step != SQLITE_DONE) {
+					ERROR("Error when parsing response to '%s': %d\%s",
+							QUERY_DELETE_BEGIN, step, sqlite3_errmsg(db));
+					ok = false;
+				}
+				sqlite3_reset(response);
+				if (!ok) {
+					break;
+				}
+			}
+		}
+		sqlite3_finalize(response);
+	}
+
+
+	{
+		/* finish transaction */
+		sqlite3_stmt* response = NULL;
+		if (!prepare(db, QUERY_DELETE_END, response)) {
+			ok = false;
+		} else {
+			int step = sqlite3_step(response);
+			if (step != SQLITE_DONE) {
+				ERROR("Error when parsing response to '%s': %d\%s",
+						QUERY_DELETE_END, step, sqlite3_errmsg(db));
+				ok = false;
+			}
+		}
+		sqlite3_finalize(response);
+	}
+
+	return ok;
 }

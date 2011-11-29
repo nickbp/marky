@@ -64,6 +64,7 @@ bool marky::Backend_Map::increment_link(scorer_t scorer,
 	std::pair<word_t, word_t> findme(first, second);
 	words_to_link_t::const_iterator iter = words.find(findme);
 
+	/* update time BEFORE link is added */
 	time_t now = time(NULL);
 	state->time = now;
 
@@ -92,6 +93,7 @@ bool marky::Backend_Map::increment_link(scorer_t scorer,
 		last_link = iter->second;
 	}
 
+	/* increment link count AFTER link is added (first link gets id 0) */
 	++state->link;
 
 	return true;
@@ -101,8 +103,8 @@ bool marky::Backend_Map::prune(scorer_t scorer) {
 	const words_to_link_t::iterator& words_end = words.end();
 	for (words_to_link_t::iterator words_iter = words.begin();
 		 words_iter != words_end; ++words_iter) {
-		score_t score = words_iter->second->score(scorer, state);
-		if (score != 0) {
+		if (words_iter->second->score(scorer, state) > 0) {
+			/* this link still has a score, doesn't need pruning */
 			continue;
 		}
 

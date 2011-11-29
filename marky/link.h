@@ -56,17 +56,23 @@ namespace marky {
 		inline score_t score(scorer_t scorer, const state_t& cur_state) {
 			return scorer(score_, state_, *cur_state);
 		}
-		inline void increment(scorer_t scorer, const state_t& cur_state) {
+		inline score_t increment(scorer_t scorer, const state_t& cur_state) {
+			/* give scorer our current state */
 			score_ = 1 + score(scorer, cur_state);
 			/* reset the state 'clock' to now */
 			state_ = *cur_state;
+			return score_;
 		}
 
 		const word_t prev;
 		const word_t next;
 
 	private:
+		/* state_ holds the last time this link was seen, and its link 'score',
+		   which is incremented each time the link is encountered and
+		   effectively decremented as other links appear */
 		_state_t state_;
+		/* updated alongside state_ when increment() is called */
 		score_t score_;
 	};
 	typedef std::shared_ptr<Link> link_t;

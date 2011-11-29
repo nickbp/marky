@@ -118,18 +118,21 @@ TEST_F(SQLite, get_random) {
 	EXPECT_TRUE(backend->get_random(scorer, rand));
 	EXPECT_FALSE((bool)rand);
 
-	ASSERT_TRUE(backend->increment_link(scorer, "a", "b"));
+	/* just add one link, since this is truly random */
 	ASSERT_TRUE(backend->increment_link(scorer, "c", "d"));
 	state_t state(new _state_t(2,2));
 
 	EXPECT_TRUE(backend->get_random(scorer, rand));
 	EXPECT_TRUE((bool)rand);
-	CHECK_LINK(scorer, state, rand, "c", "d", 1);
+	CHECK_LINK(scorer, state, rand, "c", "d", 0);
 }
 
 #define INC_STATE(STATE) ++state->time; ++state->link;
 
+#include <marky/config.h>//TODO TEMP
+
 TEST_F(SQLite, scoreadj_prune) {
+	config::debug_enabled = true;
 	backend_t backend = Backend_SQLite::create(SQLITE_DB_PATH);
 	ASSERT_TRUE((bool)backend);
 	/* each link loses a point if it's not updated within 2 increments */
@@ -206,8 +209,6 @@ TEST_F(SQLite, scoreadj_prune) {
 	EXPECT_TRUE(backend->get_random(scorer, link));
 	CHECK_LINK(scorer, state, link, "c", "d", 5);
 }
-
-//TODO tests which recheck the above after closing/reopening the instance
 
 int main(int argc, char **argv) {
 	::testing::InitGoogleTest( &argc, argv );

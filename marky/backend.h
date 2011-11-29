@@ -30,8 +30,7 @@ namespace marky {
 		virtual ~IBackend() { }
 
 		/* Gets a random link, or an empty pointer if none was available.
-		 * NOTE: The link's score is unadjusted. Return false in the event of
-		 * a backend error. */
+		 * Return false in the event of a backend error. */
 		virtual bool get_random(scorer_t scorer, link_t& random) = 0;
 
 		/* For a given 'word', uses 'selector' and 'scorer' to select and return
@@ -39,11 +38,11 @@ namespace marky {
 		 * false in the event of some error. */
 
 		/* Get a link whose 'prev' is 'word', or an empty pointer if none was
-		   found. Return false in the event of a backend error. */
+		 * found. Return false in the event of a backend error. */
 		virtual bool get_prev(selector_t selector, scorer_t scorer,
 				const word_t& word, link_t& prev) = 0;
 		/* Get a link whose 'next' is 'word', or an empty pointer if none was
-		   found. Return false in the event of a backend error. */
+		 * found. Return false in the event of a backend error. */
 		virtual bool get_next(selector_t selector, scorer_t scorer,
 				const word_t& word, link_t& next) = 0;
 
@@ -53,7 +52,8 @@ namespace marky {
 				const word_t& first, const word_t& second) = 0;
 
 		/* Prunes/updates links according to the rules of the scorer. Any links
-		 * with an adjusted score of 0 are removed. */
+		 * with an adjusted score of 0 are removed. This is assumed to only be
+		 * called periodically, so it's not assumed to be especially fast. */
 		virtual bool prune(scorer_t scorer) = 0;
 	};
 	typedef std::shared_ptr<IBackend> backend_t;
