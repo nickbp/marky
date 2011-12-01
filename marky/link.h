@@ -53,15 +53,26 @@ namespace marky {
 				time_t time, size_t link, score_t score = 1)
 			: prev(prev), next(next), state_(time, link), score_(score) { }
 
+		/* get adjusted score according to the given state */
 		inline score_t score(scorer_t scorer, const state_t& cur_state) {
 			return scorer(score_, state_, *cur_state);
 		}
+		/* increments score and adjusts according to the given state */
 		inline score_t increment(scorer_t scorer, const state_t& cur_state) {
 			/* give scorer our current state */
 			score_ = 1 + score(scorer, cur_state);
 			/* reset the state 'clock' to now */
 			state_ = *cur_state;
 			return score_;
+		}
+
+		/* get current score as of last-seen state */
+		inline score_t cur_score() const {
+			return score_;
+		}
+		/* get current last-seen state */
+		inline const _state_t& cur_state() const {
+			return state_;
 		}
 
 		const word_t prev;

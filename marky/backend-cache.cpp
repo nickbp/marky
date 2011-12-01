@@ -266,5 +266,5 @@ bool marky::Backend_Cache::prune(scorer_t scorer) {
 	changed_prevs.clear();
 	changed_nexts.clear();
 
-	return true;
+	return wrapme->prune(scorer);
 }

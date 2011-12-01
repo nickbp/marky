@@ -81,7 +81,8 @@ namespace marky {
 		virtual bool get_link(const word_t& first, const word_t& second,
 				link_t& out) = 0;
 
-		/* Update the backend with the provided link data and state. */
+		/* Update the backend with the provided link data and state. This is
+		 * conceptually for flushing the result of several increment_link()s. */
 		virtual bool flush(const links_t& links, const state_t& state) = 0;
 	};
 	typedef std::shared_ptr<ICacheable> cacheable_t;

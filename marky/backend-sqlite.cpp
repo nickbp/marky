@@ -49,11 +49,14 @@
 	LINKS_COL_SCORE " INTEGER NOT NULL, " \
 	LINKS_COL_TIME " INTEGER NOT NULL, " \
 	LINKS_COL_LINK " INTEGER NOT NULL, " \
-	"PRIMARY KEY (" LINKS_COL_PREV ", " LINKS_COL_NEXT ") ON CONFLICT ROLLBACK); " \
+	"PRIMARY KEY (" LINKS_COL_PREV ", " LINKS_COL_NEXT ") ON CONFLICT REPLACE); " \
 \
 	"CREATE INDEX IF NOT EXISTS " LINKS_INDEX_PREV " ON " LINKS_TABLE " (" LINKS_COL_PREV ");" \
 	"CREATE INDEX IF NOT EXISTS " LINKS_INDEX_NEXT " ON " LINKS_TABLE " (" LINKS_COL_NEXT ");" \
 	"COMMIT TRANSACTION"
+
+#define QUERY_BEGIN_TRANSACTION "BEGIN TRANSACTION"
+#define QUERY_END_TRANSACTION "COMMIT TRANSACTION"
 
 #define QUERY_GET_STATE \
 	"SELECT " STATE_COL_TIME ", " STATE_COL_LINK " FROM " STATE_TABLE " LIMIT 1"
@@ -66,10 +69,10 @@
 	LINKS_COL_TIME ", " LINKS_COL_LINK ", " LINKS_COL_SCORE \
 	" FROM " LINKS_TABLE " ORDER BY RANDOM() LIMIT 1"
 
-#define QUERY_GET_PREV \
+#define QUERY_GET_PREVS \
 	"SELECT " LINKS_COL_NEXT ", " LINKS_COL_TIME ", " LINKS_COL_LINK ", " \
 	LINKS_COL_SCORE	" FROM " LINKS_TABLE " WHERE " LINKS_COL_PREV "=?1"
-#define QUERY_GET_NEXT \
+#define QUERY_GET_NEXTS \
 	"SELECT " LINKS_COL_PREV ", " LINKS_COL_TIME ", " LINKS_COL_LINK ", " \
 	LINKS_COL_SCORE " FROM " LINKS_TABLE " WHERE " LINKS_COL_NEXT "=?1"
 
@@ -81,8 +84,9 @@
 	"UPDATE " LINKS_TABLE " SET " LINKS_COL_SCORE "=?1, " \
 	LINKS_COL_TIME "=?2, " LINKS_COL_LINK "=?3 WHERE " \
 	LINKS_COL_PREV "=?4 AND " LINKS_COL_NEXT "=?5"
+//note the ON CONFLICT REPLACE above:
 #define QUERY_INSERT_LINK \
-	"INSERT OR ROLLBACK INTO " LINKS_TABLE " (" \
+	"INSERT INTO " LINKS_TABLE " (" \
 	LINKS_COL_PREV "," LINKS_COL_NEXT "," LINKS_COL_SCORE "," \
 	LINKS_COL_TIME "," LINKS_COL_LINK ") VALUES (?1,?2,?3,?4,?5)"
 
@@ -91,11 +95,10 @@
 	LINKS_COL_TIME ", " LINKS_COL_LINK ", " LINKS_COL_SCORE \
 	" FROM " LINKS_TABLE
 
-#define QUERY_DELETE_BEGIN "BEGIN TRANSACTION"
 #define QUERY_DELETE_LINK \
 	"DELETE FROM " LINKS_TABLE " WHERE " \
 	LINKS_COL_PREV "=?1 AND " LINKS_COL_NEXT "=?2"
-#define QUERY_DELETE_END "COMMIT TRANSACTION"
+
 
 namespace {
 	bool exec(sqlite3* db, const char* cmd) {
@@ -272,7 +275,7 @@ bool marky::Backend_SQLite::get_random(scorer_t /*scorer*/, link_t& random) {
 bool marky::Backend_SQLite::get_prev(selector_t selector, scorer_t scorer,
 		const word_t& word, link_t& prev) {
 	sqlite3_stmt* response = NULL;
-	if (!prepare(db, QUERY_GET_PREV, response) ||
+	if (!prepare(db, QUERY_GET_PREVS, response) ||
 			!bind_str(response, 1, word)) {
 		return false;
 	}
@@ -293,7 +296,7 @@ bool marky::Backend_SQLite::get_prev(selector_t selector, scorer_t scorer,
 		} else {
 			ok = false;
 			ERROR("Error when parsing response to '%s': %d/%s",
-					QUERY_GET_PREV, step, sqlite3_errmsg(db));
+					QUERY_GET_PREVS, step, sqlite3_errmsg(db));
 			break;
 		}
 	}
@@ -309,7 +312,7 @@ bool marky::Backend_SQLite::get_prev(selector_t selector, scorer_t scorer,
 bool marky::Backend_SQLite::get_next(selector_t selector, scorer_t scorer,
 		const word_t& word, link_t& next) {
 	sqlite3_stmt* response = NULL;
-	if (!prepare(db, QUERY_GET_NEXT, response) ||
+	if (!prepare(db, QUERY_GET_NEXTS, response) ||
 			!bind_str(response, 1, word)) {
 		return false;
 	}
@@ -330,7 +333,7 @@ bool marky::Backend_SQLite::get_next(selector_t selector, scorer_t scorer,
 		} else {
 			ok = false;
 			ERROR("Error when parsing response to '%s': %d/%s",
-					QUERY_GET_NEXT, step, sqlite3_errmsg(db));
+					QUERY_GET_NEXTS, step, sqlite3_errmsg(db));
 			break;
 		}
 	}
@@ -378,7 +381,7 @@ bool marky::Backend_SQLite::increment_link(scorer_t scorer,
 			} else {
 				int update_step = sqlite3_step(update_response);
 				if (update_step != SQLITE_DONE) {
-					ERROR("Error when parsing response to '%s': %d\%s",
+					ERROR("Error when parsing response to '%s': %d/%s",
 							QUERY_UPDATE_LINK, update_step, sqlite3_errmsg(db));
 				}
 			}
@@ -399,7 +402,7 @@ bool marky::Backend_SQLite::increment_link(scorer_t scorer,
 			} else {
 				int insert_step = sqlite3_step(insert_response);
 				if (insert_step != SQLITE_DONE) {
-					ERROR("Error when parsing response to '%s': %d\%s",
+					ERROR("Error when parsing response to '%s': %d/%s",
 							QUERY_INSERT_LINK, insert_step, sqlite3_errmsg(db));
 				}
 			}
@@ -464,13 +467,13 @@ bool marky::Backend_SQLite::prune(scorer_t scorer) {
 	{
 		/* start transaction */
 		sqlite3_stmt* response = NULL;
-		if (!prepare(db, QUERY_DELETE_BEGIN, response)) {
+		if (!prepare(db, QUERY_BEGIN_TRANSACTION, response)) {
 			ok = false;
 		} else {
 			int step = sqlite3_step(response);
 			if (step != SQLITE_DONE) {
 				ERROR("Error when parsing response to '%s': %d\%s",
-						QUERY_DELETE_BEGIN, step, sqlite3_errmsg(db));
+						QUERY_BEGIN_TRANSACTION, step, sqlite3_errmsg(db));
 				ok = false;
 			}
 		}
@@ -495,7 +498,7 @@ bool marky::Backend_SQLite::prune(scorer_t scorer) {
 				int step = sqlite3_step(response);
 				if (step != SQLITE_DONE) {
 					ERROR("Error when parsing response to '%s': %d\%s",
-							QUERY_DELETE_BEGIN, step, sqlite3_errmsg(db));
+							QUERY_DELETE_LINK, step, sqlite3_errmsg(db));
 					ok = false;
 				}
 				sqlite3_reset(response);
@@ -511,13 +514,13 @@ bool marky::Backend_SQLite::prune(scorer_t scorer) {
 	{
 		/* finish transaction */
 		sqlite3_stmt* response = NULL;
-		if (!prepare(db, QUERY_DELETE_END, response)) {
+		if (!prepare(db, QUERY_END_TRANSACTION, response)) {
 			ok = false;
 		} else {
 			int step = sqlite3_step(response);
 			if (step != SQLITE_DONE) {
 				ERROR("Error when parsing response to '%s': %d\%s",
-						QUERY_DELETE_END, step, sqlite3_errmsg(db));
+						QUERY_END_TRANSACTION, step, sqlite3_errmsg(db));
 				ok = false;
 			}
 		}
@@ -539,18 +542,134 @@ marky::state_t marky::Backend_SQLite::state() {
 }
 
 bool marky::Backend_SQLite::get_prevs(const word_t& word, links_t& out) {
-	return false;//TODO
+	sqlite3_stmt* response = NULL;
+	if (!prepare(db, QUERY_GET_PREVS, response) ||
+			!bind_str(response, 1, word)) {
+		return false;
+	}
+
+	bool ok = true;
+	for (;;) {
+		int step = sqlite3_step(response);
+		/* use if instead of switch to easily break the for loop */
+		if (step == SQLITE_DONE) {
+			break;
+		} else if (step == SQLITE_ROW) {
+			link_t link(new Link(word, (const char*)sqlite3_column_text(response, 0),
+							sqlite3_column_int64(response, 1),
+							sqlite3_column_int64(response, 2),
+							sqlite3_column_int64(response, 3)));
+			out->push_back(link);
+		} else {
+			ok = false;
+			ERROR("Error when parsing response to '%s': %d/%s",
+					QUERY_GET_PREVS, step, sqlite3_errmsg(db));
+			break;
+		}
+	}
+	sqlite3_finalize(response);
+
+	return ok;
 }
 
 bool marky::Backend_SQLite::get_nexts(const word_t& word, links_t& out) {
-	return false;//TODO
+	sqlite3_stmt* response = NULL;
+	if (!prepare(db, QUERY_GET_NEXTS, response) ||
+			!bind_str(response, 1, word)) {
+		return false;
+	}
+
+	bool ok = true;
+	for (;;) {
+		int step = sqlite3_step(response);
+		/* use if instead of switch to easily break the for loop */
+		if (step == SQLITE_DONE) {
+			break;
+		} else if (step == SQLITE_ROW) {
+			link_t link(new Link((const char*)sqlite3_column_text(response, 0), word,
+							sqlite3_column_int64(response, 1),
+							sqlite3_column_int64(response, 2),
+							sqlite3_column_int64(response, 3)));
+			out->push_back(link);
+		} else {
+			ok = false;
+			ERROR("Error when parsing response to '%s': %d/%s",
+					QUERY_GET_NEXTS, step, sqlite3_errmsg(db));
+			break;
+		}
+	}
+	sqlite3_finalize(response);
+
+	return ok;
 }
 
 bool marky::Backend_SQLite::get_link(const word_t& first, const word_t& second,
 		link_t& out) {
-	return false;//TODO
+	sqlite3_stmt* get_response = NULL;
+	if (!prepare(db, QUERY_GET_LINK, get_response) ||
+			!bind_str(get_response, 1, first) ||
+			!bind_str(get_response, 2, second)) {
+		return false;
+	}
+
+	bool ok = true;
+	int get_step = sqlite3_step(get_response);
+	switch (get_step) {
+	case SQLITE_ROW:/* entry found, produce it */
+		out.reset(new Link(first, second,
+						sqlite3_column_int64(get_response, 0),
+						sqlite3_column_int64(get_response, 1),
+						sqlite3_column_int64(get_response, 2)));
+		break;
+	case SQLITE_DONE:/* nothing found, produce null */
+		out.reset();
+		break;
+	default:
+		ok = false;
+		ERROR("Error when parsing response to '%s': %d/%s",
+				QUERY_GET_LINK, get_step, sqlite3_errmsg(db));
+	}
+	sqlite3_finalize(get_response);
+	return ok;
 }
 
 bool marky::Backend_SQLite::flush(const links_t& links, const state_t& state) {
-	return false;//TODO
+	/* update the sqlite state */
+	state_ = state;
+
+	if (links->empty()) {
+		/* nothing left to do! */
+		return true;
+	}
+
+	sqlite3_stmt* response = NULL;
+	if (!prepare(db, QUERY_INSERT_LINK, response)) {
+		return false;
+	}
+
+	bool ok = true;
+
+	const _links_t::const_iterator end = links->end();
+	for (_links_t::const_iterator iter = links->begin();
+		 iter != end; ++iter) {
+		const Link& link = **iter;
+		if (!bind_str(response, 1, link.prev) ||
+				!bind_str(response, 2, link.next) ||
+				!bind_int64(response, 3, link.cur_score()) ||
+				!bind_int64(response, 4, link.cur_state().time) ||
+				!bind_int64(response, 5, link.cur_state().link)) {
+			ok = false;
+		}
+
+		int get_step = sqlite3_step(response);
+		if (get_step != SQLITE_DONE) {
+			ok = false;
+			ERROR("Error when flushing entry with '%s': %d/%s",
+					QUERY_INSERT_LINK, get_step, sqlite3_errmsg(db));
+		}
+		sqlite3_reset(response);
+	}
+
+	sqlite3_finalize(response);
+	return ok;
 }
