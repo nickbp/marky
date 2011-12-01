@@ -68,7 +68,11 @@ bool marky::Backend_Map::increment_link(scorer_t scorer,
 	time_t now = time(NULL);
 	state->time = now;
 
-	if (iter == words.end()) {
+	if (iter != words.end()) {
+		/* link already exists, readjust/increment score */
+		iter->second->increment(scorer, state);
+		last_link = iter->second;
+	} else {
 		/* link is new, create and add to maps */
 		link_t link(new Link(first, second, now, state->link));
 		words.insert(std::make_pair(findme, link));
@@ -87,10 +91,6 @@ bool marky::Backend_Map::increment_link(scorer_t scorer,
 		}
 		nexts_iter->second->push_back(link);
 		last_link = link;
-	} else {
-		/* link already exists, readjust/increment score */
-		iter->second->increment(scorer, state);
-		last_link = iter->second;
 	}
 
 	/* increment link count AFTER link is added (first link gets id 0) */

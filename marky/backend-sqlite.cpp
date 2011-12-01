@@ -139,7 +139,15 @@ namespace {
 	}
 }
 
-/*static*/ marky::backend_t marky::Backend_SQLite::create(const std::string& db_file_path) {
+/*static*/ marky::cacheable_t marky::Backend_SQLite::create_cacheable(const std::string& db_file_path) {
+	Backend_SQLite* ret = new Backend_SQLite(db_file_path);
+	if (!ret->init()) {
+		delete ret;
+		return cacheable_t();
+	}
+	return cacheable_t(ret);
+}
+/*static*/ marky::backend_t marky::Backend_SQLite::create_backend(const std::string& db_file_path) {
 	Backend_SQLite* ret = new Backend_SQLite(db_file_path);
 	if (!ret->init()) {
 		delete ret;
@@ -153,12 +161,12 @@ marky::Backend_SQLite::Backend_SQLite(const std::string& db_file_path)
 
 marky::Backend_SQLite::~Backend_SQLite() {
 	if (db != NULL) {
-		if ((bool)state) {
+		if ((bool)state_) {
 			/* update db state */
 			sqlite3_stmt* response = NULL;
 			if (prepare(db, QUERY_UPDATE_STATE, response) &&
-					bind_int64(response, 1, state->time) &&
-					bind_int64(response, 2, state->link)) {
+					bind_int64(response, 1, state_->time) &&
+					bind_int64(response, 2, state_->link)) {
 				int step = sqlite3_step(response);
 				if (step != SQLITE_DONE) {
 					ERROR("Error when parsing response to '%s': %d\%s",
@@ -213,11 +221,11 @@ bool marky::Backend_SQLite::init() {
 	int step = sqlite3_step(response);
 	switch (step) {
 	case SQLITE_ROW:/* row found, parse */
-		state.reset(new _state_t(sqlite3_column_int64(response, 0),
+		state_.reset(new _state_t(sqlite3_column_int64(response, 0),
 						sqlite3_column_int64(response, 1)));
 		break;
 	case SQLITE_DONE:/* nothing found, init state to 0 */
-		state.reset(new _state_t(time(NULL), 0));
+		state_.reset(new _state_t(time(NULL), 0));
 		break;
 	default:
 		ok = false;
@@ -228,6 +236,8 @@ bool marky::Backend_SQLite::init() {
 	sqlite3_finalize(response);
 	return ok;
 }
+
+// IBACKEND STUFF (when used directly, PROBABLY SLOW)
 
 bool marky::Backend_SQLite::get_random(scorer_t /*scorer*/, link_t& random) {
 	sqlite3_stmt* response = NULL;
@@ -292,7 +302,7 @@ bool marky::Backend_SQLite::get_prev(selector_t selector, scorer_t scorer,
 	if (links->empty()) {
 		prev.reset();
 	} else {
-		prev = selector(links, scorer, state);
+		prev = selector(links, scorer, state_);
 	}
 	return ok;
 }
@@ -329,7 +339,7 @@ bool marky::Backend_SQLite::get_next(selector_t selector, scorer_t scorer,
 	if (links->empty()) {
 		next.reset();
 	} else {
-		next = selector(links, scorer, state);
+		next = selector(links, scorer, state_);
 	}
 	return ok;
 }
@@ -345,7 +355,7 @@ bool marky::Backend_SQLite::increment_link(scorer_t scorer,
 
 	/* update time BEFORE link is added */
 	time_t now = time(NULL);
-	state->time = now;
+	state_->time = now;
 
 	bool ok = true;
 	int get_step = sqlite3_step(get_response);
@@ -359,9 +369,9 @@ bool marky::Backend_SQLite::increment_link(scorer_t scorer,
 
 			sqlite3_stmt* update_response = NULL;
 			if (!prepare(db, QUERY_UPDATE_LINK, update_response) ||
-					!bind_int64(update_response, 1, link.increment(scorer, state)) ||
-					!bind_int64(update_response, 2, state->time) ||
-					!bind_int64(update_response, 3, state->link) ||
+					!bind_int64(update_response, 1, link.increment(scorer, state_)) ||
+					!bind_int64(update_response, 2, state_->time) ||
+					!bind_int64(update_response, 3, state_->link) ||
 					!bind_str(update_response, 4, first) ||
 					!bind_str(update_response, 5, second)) {
 				ok = false;
@@ -377,14 +387,14 @@ bool marky::Backend_SQLite::increment_link(scorer_t scorer,
 		break;
 	case SQLITE_DONE:/* nothing found, insert new */
 		{
-			Link link(first, second, state->time, state->link);
+			Link link(first, second, state_->time, state_->link);
 			sqlite3_stmt* insert_response = NULL;
 			if (!prepare(db, QUERY_INSERT_LINK, insert_response) ||
 					!bind_str(insert_response, 1, first) ||
 					!bind_str(insert_response, 2, second) ||
-					!bind_int64(insert_response, 3, link.score(scorer, state)) ||
-					!bind_int64(insert_response, 4, state->time) ||
-					!bind_int64(insert_response, 5, state->link)) {
+					!bind_int64(insert_response, 3, link.score(scorer, state_)) ||
+					!bind_int64(insert_response, 4, state_->time) ||
+					!bind_int64(insert_response, 5, state_->link)) {
 				ok = false;
 			} else {
 				int insert_step = sqlite3_step(insert_response);
@@ -404,7 +414,7 @@ bool marky::Backend_SQLite::increment_link(scorer_t scorer,
 	sqlite3_finalize(get_response);
 
 	/* increment link count AFTER link is added (first link gets id 0) */
-	++state->link;
+	++state_->link;
 
 	return ok;
 }
@@ -429,7 +439,7 @@ bool marky::Backend_SQLite::prune(scorer_t scorer) {
 								sqlite3_column_int64(response, 2),
 								sqlite3_column_int64(response, 3),
 								sqlite3_column_int64(response, 4)));
-				if (link->score(scorer, state) == 0) {
+				if (link->score(scorer, state_) == 0) {
 					/* zero score; prune */
 					delme.push_back(link);
 				}
@@ -515,4 +525,32 @@ bool marky::Backend_SQLite::prune(scorer_t scorer) {
 	}
 
 	return ok;
+}
+
+// ICACHEABLE STUFF (when wrapped in cache)
+
+marky::state_t marky::Backend_SQLite::state() {
+	if (!(bool)state_) {
+		ERROR_DIR("get_state() called against uninitialized Backend_SQLite!");
+		return state_t();
+	}
+	state_t state_cpy(new _state_t(*state_));
+	return state_cpy;
+}
+
+bool marky::Backend_SQLite::get_prevs(const word_t& word, links_t& out) {
+	return false;//TODO
+}
+
+bool marky::Backend_SQLite::get_nexts(const word_t& word, links_t& out) {
+	return false;//TODO
+}
+
+bool marky::Backend_SQLite::get_link(const word_t& first, const word_t& second,
+		link_t& out) {
+	return false;//TODO
+}
+
+bool marky::Backend_SQLite::flush(const links_t& links, const state_t& state) {
+	return false;//TODO
 }

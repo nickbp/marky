@@ -25,14 +25,16 @@ struct sqlite3;
 
 namespace marky {
 	/* A backend which uses a sqlite3 database for storing persistent state. */
-	class Backend_SQLite : public IBackend {
+	class Backend_SQLite : public ICacheable {
 	public:
 		/* Returns a SQLite backend, or an empty ptr if there was an error
 		 * when creating it. */
-		static backend_t create(const std::string& db_file_path);
+		static cacheable_t create_cacheable(const std::string& db_file_path);
+		static backend_t create_backend(const std::string& db_file_path);
 
 		virtual ~Backend_SQLite();
 
+		/* for IBackend: */
 		bool get_random(scorer_t scorer, link_t& random);
 
 		bool get_prev(selector_t selector, scorer_t scorer,
@@ -45,13 +47,22 @@ namespace marky {
 
 		bool prune(scorer_t scorer);
 
+		/* for ICacheable: */
+		state_t state();
+
+		bool get_prevs(const word_t& word, links_t& out);
+		bool get_nexts(const word_t& word, links_t& out);
+		bool get_link(const word_t& first, const word_t& second, link_t& out);
+
+		bool flush(const links_t& links, const state_t& state);
+
 	private:
 		Backend_SQLite(const std::string& db_file_path);
 		bool init();
 
 		const std::string path;
 		sqlite3* db;
-		state_t state;
+		state_t state_;
 	};
 }
 

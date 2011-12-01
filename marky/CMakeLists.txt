@@ -3,30 +3,30 @@ cmake_minimum_required (VERSION 2.6)
 project(marky)
 
 include_directories(
-	${PROJECT_BINARY_DIR}
+	${PROJECT_BINARY_DIR} #for generated config.h
 )
 
 set(marky_srcs
-	backend.h
-	backend-map.h
 	backend-map.cpp
-	config.in.h
 	config.cpp
-	link.h
-	marky.h
 	marky.cpp
-	scorer.h
 	scorer.cpp
-	selector.h
 	selector.cpp
 )
 set(marky_libs
 )
 
 if(BUILD_BACKEND_SQLITE)
-	list(APPEND marky_srcs backend-sqlite.h backend-sqlite.cpp)
-	list(APPEND marky_libs ${sqlite_LIBRARY})
-	include_directories(${sqlite_INCLUDE_DIR})
+	include_directories(
+		${sqlite_INCLUDE_DIR}
+	)
+	list(APPEND marky_srcs
+		backend-cache.cpp
+		backend-sqlite.cpp
+	)
+	list(APPEND marky_libs
+		${sqlite_LIBRARY}
+	)
 endif()
 
 configure_file (

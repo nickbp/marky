@@ -57,6 +57,34 @@ namespace marky {
 		virtual bool prune(scorer_t scorer) = 0;
 	};
 	typedef std::shared_ptr<IBackend> backend_t;
+
+	/* Backends which support being passed to Backend_Cache should implement
+	 * this interface. */
+	class ICacheable : public IBackend {
+	public:
+		virtual ~ICacheable() { }
+
+		/* Get the current state for the backend. */
+		virtual state_t state() = 0;
+
+		/* Get all links whose 'prev' is 'word', or an empty list if none are
+		 * found. Return false in the event of a backend error. */
+		virtual bool get_prevs(const word_t& word, links_t& out) = 0;
+
+		/* Get all links whose 'next' is 'word', or an empty list if none are
+		 * found. Return false in the event of a backend error. */
+		virtual bool get_nexts(const word_t& word, links_t& out) = 0;
+
+		/* Get a link whose 'prev' is 'first' and 'next' is 'second', or an
+		 * empty pointer if none are found. Return false in the event of a
+		 * backend error */
+		virtual bool get_link(const word_t& first, const word_t& second,
+				link_t& out) = 0;
+
+		/* Update the backend with the provided link data and state. */
+		virtual bool flush(const links_t& links, const state_t& state) = 0;
+	};
+	typedef std::shared_ptr<ICacheable> cacheable_t;
 }
 
 #endif

@@ -46,11 +46,10 @@ namespace marky {
 	};
 	*/
 
-	/* A cache wrapper around another IBackend. */
-
+	/* A cache wrapper around an ICacheable. */
 	class Backend_Cache : public IBackend {
 	public:
-		Backend_Cache(backend_t backend);
+		Backend_Cache(cacheable_t backend);
 		virtual ~Backend_Cache();
 
 		bool get_random(scorer_t scorer, link_t& random);
@@ -66,12 +65,6 @@ namespace marky {
 		bool prune(scorer_t scorer);
 
 	private:
-		state_t state;
-		link_t last_link;/* shortcut for get_random */
-
-		typedef std::unordered_map<word_t, links_t> word_to_links_t;
-		word_to_links_t prevs, nexts;/* prev OR next -> links */
-
 		template <typename T>
 		struct pair_hash {
 		public:
@@ -81,11 +74,25 @@ namespace marky {
 		private:
 			const std::hash<T> hash;
 		};
+
+		typedef std::unordered_map<word_t, links_t> word_to_links_t;
 		typedef std::unordered_map<std::pair<word_t, word_t>,
 			link_t, pair_hash<word_t> > words_to_link_t;
-		words_to_link_t words;/* prev AND next -> link */
 
-		std::unordered_set<word_t> missing_prevs, missing_nexts;//TODO could this be merged into prevs/nexts/words? perhaps with null ptr for values?
+		bool pick_word(const word_to_links_t::iterator& got_iter,
+				word_to_links_t& changed_map,
+				selector_t selector, scorer_t scorer,
+				const word_t& word, link_t& out);
+
+		cacheable_t wrapme;
+		state_t state;
+
+		/* prev OR next -> links/NULL */
+		word_to_links_t got_prevs, got_nexts,/* unmodified words we've gotten from wrapme */
+			changed_prevs, changed_nexts;/* modified words from increment_link */
+		/* prev AND next -> link */
+		words_to_link_t got_words,/* pool of all unmodified words */
+			changed_words;/* pool of all modified words */
 	};
 }
 

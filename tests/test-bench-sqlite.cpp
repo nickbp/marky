@@ -19,10 +19,18 @@
 #include <gtest/gtest.h>
 #include <marky/backend-sqlite.h>
 #include <unistd.h> //unlink()
+#include <test-bench-config.h> //TEST_DATA_PATH
 
 using namespace marky;
 
 #define SQLITE_DB_PATH "sqlite_test.db"
+
+/*
+  TODO cpu/mem bench/profile these against a big text file:
+  - sqlite standalone
+  - sqlite+writecache
+  - sqlite+rwcache
+*/
 
 class SQLite : public testing::Test {
 protected:
