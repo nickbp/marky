@@ -1,9 +1,9 @@
-#ifndef MARKY_BACKEND_MAP_H
-#define MARKY_BACKEND_MAP_H
+#ifndef MARKY_BACKEND_CACHE_H
+#define MARKY_BACKEND_CACHE_H
 
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2012  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -24,28 +24,6 @@
 #include "backend.h"
 
 namespace marky {
-	/* Useful utils, used internally */
-
-	/*
-
-	template <typename MAP, typename VAL>
-	class map_value_iterator : public std::iterator<std::input_iterator_tag, VAL> {
-	public:
-		map_value_iterator(const typename MAP::const_iterator& iter) : iter(iter) { }
-		map_value_iterator& operator++() { ++iter; return *this; }
-		bool operator==(const map_value_iterator<MAP,VAL>& other) const {
-			return iter == other.iter;
-		}
-		bool operator!=(const map_value_iterator<MAP,VAL>& other) const {
-			return iter != other.iter;
-		}
-		const VAL& operator*() const { return iter->second; }
-		const VAL& operator->() const { return iter->second; }
-	private:
-		typename MAP::const_iterator iter;
-	};
-	*/
-
 	/* A cache wrapper around an ICacheable. */
 	class Backend_Cache : public IBackend {
 	public:

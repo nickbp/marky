@@ -1,6 +1,6 @@
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2012  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -209,7 +209,10 @@ bool marky::Backend_Cache::increment_link(scorer_t scorer,
 				/* backend failure */
 				return false;
 			}
-			if (!(bool)link) {
+			if ((bool)link) {
+				/* backend had it, increment its score */
+				link->increment(scorer, state);
+			} else {
 				/* backend doesn't have it either. create a new entry. */
 				link.reset(new Link(first, second, now, state->link));
 			}

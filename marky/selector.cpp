@@ -18,20 +18,34 @@
 
 #include "selector.h"
 
+#include <sys/time.h> /* gettimeofday() */
 #include <stdlib.h> /* rand() */
 
 using namespace std::placeholders;
 
 namespace marky {
+	inline unsigned int get_seed() {
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		return (unsigned int)tv.tv_usec;
+	}
+
+	inline size_t get_rand(size_t max) {
+		static unsigned int seed = get_seed();
+		return (rand_r(&seed) * max) / (double)RAND_MAX;
+	}
+
 	link_t select_best(const links_t& links, const scorer_t& scorer,
 			const state_t& state) {
+		/* shortcuts: */
 		if (links->empty()) { return link_t(); }
+		if (links->size() == 1) { return links->front(); }
 
 		_links_t::const_iterator best_iter = links->begin();
 		score_t best_score = (*best_iter)->score(scorer, state);
 
 		const _links_t::const_iterator& end = links->end();
-		for (_links_t::const_iterator iter = links->begin();
+		for (_links_t::const_iterator iter = ++links->begin();
 			 iter != end; ++iter) {
 			score_t score = (*iter)->score(scorer, state);
 			if (score > best_score) {
@@ -44,8 +58,11 @@ namespace marky {
 	}
 
 	link_t select_random(const links_t& links) {
+		/* shortcuts: save us a rand() call: */
 		if (links->empty()) { return link_t(); }
-		size_t select = rand() * links->size() / (double)RAND_MAX;
+		if (links->size() == 1) { return links->front(); }
+
+		size_t select = get_rand(links->size());
 
 		/* get the nth element from the std::list */
 		_links_t::const_iterator iter = links->begin();
@@ -58,6 +75,10 @@ namespace marky {
 
 	link_t select_weighted(const links_t& links, const scorer_t& scorer,
 			const state_t& state, int8_t /*weight_factor*/) {//TODO
+		/* shortcuts: save us a rand() call: */
+		if (links->empty()) { return link_t(); }
+		if (links->size() == 1) { return links->front(); }
+
 		/* first pass: get sum score from which to derive 'select' */
 		score_t sum_score = 0;
 		const _links_t::const_iterator& end = links->end();
@@ -66,7 +87,7 @@ namespace marky {
 			sum_score += (*iter)->score(scorer, state);
 		}
 
-		score_t select = rand() * sum_score / (double)RAND_MAX;
+		score_t select = get_rand(sum_score);
 
 		/* second pass: subtract scores from select, return when select hits 0 */
 		for (_links_t::const_iterator iter = links->begin();

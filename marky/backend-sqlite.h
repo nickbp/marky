@@ -3,7 +3,7 @@
 
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2012  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -63,6 +63,7 @@ namespace marky {
 		const std::string path;
 		sqlite3* db;
 		state_t state_;
+		bool state_changed;
 	};
 }
 

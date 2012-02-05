@@ -46,7 +46,7 @@ find_file(TEST_DATA_OUT_PATH ${TEST_DATA_FILENAME}
 mark_as_advanced(TEST_DATA_OUT_PATH)
 if (TEST_DATA_OUT_PATH)
 	# unzipped data found, all set
-	message(INFO " found "${TEST_DATA_OUT_PATH})
+	message(STATUS "Found test data: "${TEST_DATA_OUT_PATH})
 	set(BUILD_BENCH_TESTS true)
 else()
 	set(TEST_DATA_ZIPPED_EXT ".bz2")
@@ -94,7 +94,3 @@ if(BUILD_BENCH_TESTS)
 		"${PROJECT_BINARY_DIR}/test-bench-config.h"
 	)
 endif()
-
-add_executable(test-marky test-marky.cpp)
-add_test(test-marky test-marky)
-target_link_libraries(test-marky marky ${gtest_libs})

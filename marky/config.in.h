@@ -3,7 +3,7 @@
 
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2012  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -58,6 +58,8 @@ namespace config {
 	static const char VERSION_STRING[] = "@marky_VERSION_MAJOR@.@marky_VERSION_MINOR@.@marky_VERSION_PATCH@"
 #ifdef BUILD_BACKEND_SQLITE
 		"-sqlite"
+#else
+		"-nodb"
 #endif
 		;
 	static const char BUILD_DATE[] = __TIMESTAMP__;

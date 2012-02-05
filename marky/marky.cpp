@@ -1,6 +1,6 @@
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2012  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -43,20 +43,22 @@ bool marky::Marky::insert(const line_t& line) {
 	return true;
 }
 
-bool marky::Marky::produce(line_t& line,
-		const word_t& search/*=word_t()*/,
-		size_t length_limit_chars/*=1000*/) {
+bool marky::Marky::produce(line_t& line, const word_t& search/*=word_t()*/,
+		size_t length_limit_words/*=0*/, size_t length_limit_chars/*=0*/) {
 	if (search.empty()) {
 		link_t rand;
-		if (!backend->get_random(scorer, rand)) {
+		if (!backend->get_random(scorer, rand)) {/* backend err */
 			return false;
+		}
+		if (!rand) {/* no data */
+			return true;
 		}
 		line.push_back(rand->prev);
 		line.push_back(rand->next);
-		return grow(line, length_limit_chars);
+		return grow(line, length_limit_words, length_limit_chars);
 	} else {
 		line.push_back(search);
-		if (!grow(line, length_limit_chars)) {/* backend err */
+		if (!grow(line, length_limit_words, length_limit_chars)) {/* backend err */
 			line.clear();
 			return false;
 		} else if (line.size() == 1) {/* didn't find 'search' */
@@ -66,36 +68,54 @@ bool marky::Marky::produce(line_t& line,
 	}
 }
 
-bool marky::Marky::grow(line_t& line, size_t length_limit_chars) {
+#define CHECK_LIMIT(size, limit) (limit == 0 || size < limit)
+#define CHECK_CHAR_LIMIT(char_size, limit) (limit == 0 || char_size < limit)
+
+bool marky::Marky::grow(line_t& line,
+		size_t length_limit_words/*=0*/, size_t length_limit_chars/*=0*/) {
 	if (line.empty()) { return false; }
-	bool continue_left = true, continue_right = true;
+	/* flags marking whether we've hit a dead end in either direction: */
+	bool left_dead = false, right_dead = false;
 	size_t char_size = 0;
+	for (line_t::const_iterator iter = line.begin();
+		 iter != line.end(); ++iter) {
+		char_size += iter->size();/* ignore space between words */
+	}
 	link_t link;
-	while (char_size < length_limit_chars &&
-			(continue_left || continue_right)) {
-		if (continue_right) {
-			if (!backend->get_next(selector, scorer, line.back(), link)) {
+	while (!left_dead || !right_dead) {
+		if (!CHECK_LIMIT(line.size(), length_limit_words) ||
+				!CHECK_LIMIT(char_size, length_limit_chars)) {
+			break;
+		}
+
+		if (!right_dead) {
+			if (!backend->get_prev(selector, scorer, line.back(), link)) {
 				return false;
 			}
 			if (link) {
 				const word_t& word = link->next;
-				char_size += word.size();
+				char_size += word.size();/* ignore space between words */
 				line.push_back(word);
 			} else {
-				continue_right = false;
+				right_dead = true;
 			}
 		}
 
-		if (continue_left) {
-			if (!backend->get_prev(selector, scorer, line.front(), link)) {
+		if (!CHECK_LIMIT(line.size(), length_limit_words) ||
+				!CHECK_LIMIT(char_size, length_limit_chars)) {
+			break;
+		}
+
+		if (!left_dead) {
+			if (!backend->get_next(selector, scorer, line.front(), link)) {
 				return false;
 			}
 			if (link) {
 				const word_t& word = link->prev;
-				char_size += word.size();
+				char_size += word.size();/* ignore space between words */
 				line.push_front(word);
 			} else {
-				continue_left = false;
+				left_dead = true;
 			}
 		}
 	}

@@ -3,7 +3,7 @@
 
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2012  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -34,18 +34,23 @@ namespace marky {
 		 * MUST have already been successfully init()ed before being passed. */
 		Marky(backend_t backend, selector_t selector, scorer_t scorer);
 
-		/* Adds the line (and its inter-word links) to the dataset. */
+		/* Adds the line (and its inter-word links) to the dataset.
+		 * Returns false in the event of some error. */
 		bool insert(const line_t& line);
 
 		/* Produces a line from the search word, or from a random word if the
-		 * search word is unspecified. Produces an empty line if the search word
-		 * wasn't found. Returns false in the event of some other error. */
+		 * search word is unspecified. 'length_limit_words' and
+		 * 'length_limit_chars' each allow setting APPROXIMATE limits on the
+		 * length of the result, or no limit if zero.
+		 * Produces an empty line if the search word wasn't found. Returns false
+		 * in the event of some other error. */
 		bool produce(line_t& line, const word_t& search = word_t(),
-				size_t length_limit_chars = 1000);
+				size_t length_limit_words = 0, size_t length_limit_chars = 0);
 
 	private:
 		/* Grows a line in both directions until length has been reached. */
-		bool grow(line_t& line, size_t length_limit_chars);
+		bool grow(line_t& line,
+				size_t length_limit_words = 0, size_t length_limit_chars = 0);
 
 		const backend_t backend;
 		const selector_t selector;
