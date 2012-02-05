@@ -36,9 +36,9 @@ marky::Backend_Cache::~Backend_Cache() {
 	}
 }
 
-bool marky::Backend_Cache::get_random(scorer_t scorer, link_t& random) {
+bool marky::Backend_Cache::get_random(link_t& random) {
 	/* just pass to wrapme, to select across full dataset */
-	return wrapme->get_random(scorer, random);
+	return wrapme->get_random(random);
 }
 
 bool marky::Backend_Cache::get_prev(selector_t selector, scorer_t scorer,

@@ -35,7 +35,7 @@ namespace marky {
 		virtual ~Backend_SQLite();
 
 		/* for IBackend: */
-		bool get_random(scorer_t scorer, link_t& random);
+		bool get_random(link_t& random);
 
 		bool get_prev(selector_t selector, scorer_t scorer,
 				const word_t& word, link_t& prev);

@@ -1,6 +1,6 @@
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2012  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,22 +19,32 @@
 #include <time.h>
 
 #include "backend-map.h"
+#include "rand-util.h"
 
-marky::Backend_Map::Backend_Map() {
-	state.reset(new _state_t(time(NULL), 0));
-}
+marky::Backend_Map::Backend_Map()
+	: state(new _state_t(time(NULL), 0)), words(), words_iter(words.end()) { }
 
-bool marky::Backend_Map::get_random(scorer_t scorer, link_t& random) {
-	/* cheat: just return the most recently updated link
-	   (easier than figuring out a random value from an unordered_map) */
-	if (last_link &&
-			last_link->score(scorer, state) != 0) {
-		/* just in case, make sure the link still has a score
-		   (if it doesn't, nothing does) */
-		random = last_link;
-	} else {
+bool marky::Backend_Map::get_random(link_t& random) {
+	/* haven't figured out a more efficient way of doing this.. */
+
+	if (words.empty()) {
 		random.reset();
+		return true;
 	}
+
+	if (words_iter == words.end()) {
+		/* seek words_iter to a random location in words */
+		unsigned int offset = pick_rand(words.size());
+		words_iter = words.begin();
+		for (unsigned int i = 0; i < offset; ++i) {
+			++words_iter;
+		}
+	}
+
+	random = words_iter->second;
+
+	/* increment for a future get_random() call. */
+	++words_iter;
 	return true;
 }
 
@@ -71,11 +81,11 @@ bool marky::Backend_Map::increment_link(scorer_t scorer,
 	if (iter != words.end()) {
 		/* link already exists, readjust/increment score */
 		iter->second->increment(scorer, state);
-		last_link = iter->second;
 	} else {
 		/* link is new, create and add to maps */
 		link_t link(new Link(first, second, now, state->link));
 		words.insert(std::make_pair(findme, link));
+		words_iter = words.end();/* invalidate iter after modification */
 
 		word_to_links_t::iterator prevs_iter = prevs.find(link->prev);
 		if (prevs_iter == prevs.end()) {
@@ -90,7 +100,6 @@ bool marky::Backend_Map::increment_link(scorer_t scorer,
 			nexts_iter = nexts.insert(std::make_pair(link->next, links)).first;
 		}
 		nexts_iter->second->push_back(link);
-		last_link = link;
 	}
 
 	/* increment link count AFTER link is added (first link gets id 0) */
@@ -100,6 +109,7 @@ bool marky::Backend_Map::increment_link(scorer_t scorer,
 }
 
 bool marky::Backend_Map::prune(scorer_t scorer) {
+	bool words_changed = false;
 	const words_to_link_t::iterator& words_end = words.end();
 	for (words_to_link_t::iterator words_iter = words.begin();
 		 words_iter != words_end; ++words_iter) {
@@ -110,6 +120,7 @@ bool marky::Backend_Map::prune(scorer_t scorer) {
 
 		/* remove from words */
 		words.erase(words_iter);
+		words_changed = true;
 
 		const word_t&
 			prev = words_iter->second->prev,
@@ -142,6 +153,9 @@ bool marky::Backend_Map::prune(scorer_t scorer) {
 				}
 			}
 		}
+	}
+	if (words_changed) {
+		words_iter = words.end();/* invalidate iter after modification */
 	}
 	return true;
 }

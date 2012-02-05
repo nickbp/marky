@@ -10,6 +10,7 @@ set(marky_srcs
 	backend-map.cpp
 	config.cpp
 	marky.cpp
+	rand-util.cpp
 	scorer.cpp
 	selector.cpp
 )

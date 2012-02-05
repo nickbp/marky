@@ -1,6 +1,6 @@
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2012  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,24 +17,11 @@
 */
 
 #include "selector.h"
-
-#include <sys/time.h> /* gettimeofday() */
-#include <stdlib.h> /* rand() */
+#include "rand-util.h"
 
 using namespace std::placeholders;
 
 namespace marky {
-	inline unsigned int get_seed() {
-		struct timeval tv;
-		gettimeofday(&tv, NULL);
-		return (unsigned int)tv.tv_usec;
-	}
-
-	inline size_t get_rand(size_t max) {
-		static unsigned int seed = get_seed();
-		return (rand_r(&seed) * max) / (double)RAND_MAX;
-	}
-
 	link_t select_best(const links_t& links, const scorer_t& scorer,
 			const state_t& state) {
 		/* shortcuts: */
@@ -62,7 +49,7 @@ namespace marky {
 		if (links->empty()) { return link_t(); }
 		if (links->size() == 1) { return links->front(); }
 
-		size_t select = get_rand(links->size());
+		size_t select = pick_rand(links->size());
 
 		/* get the nth element from the std::list */
 		_links_t::const_iterator iter = links->begin();
@@ -87,7 +74,7 @@ namespace marky {
 			sum_score += (*iter)->score(scorer, state);
 		}
 
-		score_t select = get_rand(sum_score);
+		score_t select = pick_rand(sum_score);
 
 		/* second pass: subtract scores from select, return when select hits 0 */
 		for (_links_t::const_iterator iter = links->begin();

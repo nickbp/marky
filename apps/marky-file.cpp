@@ -132,7 +132,7 @@ static bool parse_config(int argc, char* argv[]) {
 		case 'i':
 			run_cmd = CMD_IMPORT;
 			if (!IS_STDIN(optarg)) {
-				file_in.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+				file_in.exceptions(std::ifstream::badbit);
 				try {
 					file_in.open(optarg);
 				} catch (const std::exception& e) {
@@ -147,7 +147,7 @@ static bool parse_config(int argc, char* argv[]) {
 		case 'p':
 			run_cmd = CMD_PRINT;
 			if (!IS_STDIN(optarg)) {
-				file_in.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+				file_in.exceptions(std::ifstream::badbit);
 				try {
 					file_in.open(optarg);
 				} catch (const std::exception& e) {
@@ -242,7 +242,7 @@ static bool parse_config(int argc, char* argv[]) {
 	return true;
 }
 
-static void append_file(std::istream& in, marky::Marky& out,
+static void read_file(std::istream& in, marky::Marky& out,
 		marky::backend_t pruneme, marky::scorer_t scorer, size_t prunefreq) {
 	std::string line_s;
 	marky::line_t insertme;
@@ -254,13 +254,16 @@ static void append_file(std::istream& in, marky::Marky& out,
 			ERROR("Error.. %s", e.what());
 			break;
 		}
+		if (line_s.empty()) {
+			continue;
+		}
 		std::istringstream iss(line_s);
 
 		/* for each word in line_s, append to insertme */
 		do {
 			insertme.push_back(marky::word_t());
 		} while (iss >> insertme.back());
-		insertme.pop_back();/* empty word we just added */
+		insertme.pop_back();/* remove the empty word we just added */
 		if (insertme.empty()) {
 			continue;
 		}
@@ -323,7 +326,7 @@ int main(int argc, char* argv[]) {
 			}
 			marky::backend_t backend(new marky::Backend_Cache(sqlite));
 			marky::Marky out(backend, selector, scorer);
-			append_file(fin, out, backend, scorer, score_decrement);
+			read_file(fin, out, backend, scorer, score_decrement);
 		}
 		return EXIT_SUCCESS;
 	case CMD_EXPORT:
@@ -342,7 +345,7 @@ int main(int argc, char* argv[]) {
 		{
 			marky::backend_t backend(new marky::Backend_Map);
 			marky::Marky marky(backend, selector, scorer);
-			append_file(fin, marky, backend, scorer, score_decrement);
+			read_file(fin, marky, backend, scorer, score_decrement);
 			print_random(marky, fout, count, max_words, max_chars, search);
 		}
 		return EXIT_SUCCESS;

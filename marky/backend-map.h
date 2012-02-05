@@ -3,7 +3,7 @@
 
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2012  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ namespace marky {
 	public:
 		Backend_Map();
 
-		bool get_random(scorer_t scorer, link_t& random);
+		bool get_random(link_t& random);
 
 		bool get_prev(selector_t selector, scorer_t scorer,
 				const word_t& word, link_t& prev);
@@ -43,7 +43,6 @@ namespace marky {
 
 	private:
 		state_t state;
-		link_t last_link;/* shortcut for get_random */
 
 		typedef std::unordered_map<word_t, links_t> word_to_links_t;
 		word_to_links_t prevs, nexts;/* prev OR next -> links */
@@ -60,6 +59,7 @@ namespace marky {
 		typedef std::unordered_map<std::pair<word_t, word_t>,
 			link_t, pair_hash<word_t> > words_to_link_t;
 		words_to_link_t words;/* prev AND next -> link */
+		words_to_link_t::const_iterator words_iter;/* shortcut for get_random */
 	};
 }
 

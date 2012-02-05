@@ -1,6 +1,6 @@
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2012  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -119,18 +119,19 @@ TEST_F(SQLite, get_next) {
 TEST_F(SQLite, get_random) {
 	backend_t backend = Backend_SQLite::create_backend(SQLITE_DB_PATH);
 	ASSERT_TRUE((bool)backend);
-	/* each link loses a point if it's not updated within 2 increments */
-	scorer_t scorer = scorers::link_adj(2);
 
 	link_t rand;
-	EXPECT_TRUE(backend->get_random(scorer, rand));
+	EXPECT_TRUE(backend->get_random(rand));
 	EXPECT_FALSE((bool)rand);
+
+	/* each link loses a point if it's not updated within 2 increments */
+	scorer_t scorer = scorers::link_adj(2);
 
 	/* just add one link, since this is truly random */
 	ASSERT_TRUE(backend->increment_link(scorer, "c", "d"));
 	state_t state(new _state_t(2,2));
 
-	EXPECT_TRUE(backend->get_random(scorer, rand));
+	EXPECT_TRUE(backend->get_random(rand));
 	EXPECT_TRUE((bool)rand);
 	CHECK_LINK(scorer, state, rand, "c", "d", 0);
 }
@@ -211,7 +212,7 @@ TEST_F(SQLite, scoreadj_prune) {
 	EXPECT_TRUE(backend->get_prev(selector, scorer, "c", link));
 	CHECK_LINK(scorer, state, link, "c", "d", 5);
 
-	EXPECT_TRUE(backend->get_random(scorer, link));
+	EXPECT_TRUE(backend->get_random(link));
 	CHECK_LINK(scorer, state, link, "c", "d", 5);
 }
 

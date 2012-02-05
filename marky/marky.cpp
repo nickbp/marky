@@ -47,7 +47,7 @@ bool marky::Marky::produce(line_t& line, const word_t& search/*=word_t()*/,
 		size_t length_limit_words/*=0*/, size_t length_limit_chars/*=0*/) {
 	if (search.empty()) {
 		link_t rand;
-		if (!backend->get_random(scorer, rand)) {/* backend err */
+		if (!backend->get_random(rand)) {/* backend err */
 			return false;
 		}
 		if (!rand) {/* no data */

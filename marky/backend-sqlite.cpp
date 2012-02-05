@@ -274,7 +274,7 @@ bool marky::Backend_SQLite::init() {
 
 // IBACKEND STUFF (when used directly, PROBABLY SLOW)
 
-bool marky::Backend_SQLite::get_random(scorer_t /*scorer*/, link_t& random) {
+bool marky::Backend_SQLite::get_random(link_t& random) {
 	sqlite3_stmt* response = NULL;
 	if (!prepare(db, QUERY_GET_RANDOM, response)) {
 		sqlite3_finalize(response);
@@ -285,7 +285,6 @@ bool marky::Backend_SQLite::get_random(scorer_t /*scorer*/, link_t& random) {
 	int step = sqlite3_step(response);
 	switch (step) {
 	case SQLITE_ROW:/* row found, parse */
-		/* this might produce a record with a zero score after scorer adjustment, oh well. */
 		random.reset(new Link((const char*)sqlite3_column_text(response, 0),
 						(const char*)sqlite3_column_text(response, 1),
 						sqlite3_column_int64(response, 2),

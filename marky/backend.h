@@ -3,7 +3,7 @@
 
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2012  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ namespace marky {
 
 		/* Gets a random link, or an empty pointer if none was available.
 		 * Return false in the event of a backend error. */
-		virtual bool get_random(scorer_t scorer, link_t& random) = 0;
+		virtual bool get_random(link_t& random) = 0;
 
 		/* For a given 'word', uses 'selector' and 'scorer' to select and return
 		 * an associated link, or an empty pointer if no link was found. Returns
