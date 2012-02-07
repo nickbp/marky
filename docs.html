@@ -1,0 +1,40 @@
+---
+layout: default
+title: marky - docs
+---
+<p class="header">Components<p>
+
+Marky's functionality can be best understood by seeing how its underlying components interact.
+
+<p class="subheader">Links</p>
+
+<p>A <i>Link</i> is the connection between two words, and a few variables describing that connection's state, such as a 'score' and the last time the link was encountered. A link with a high score is more likely to be selected in Markov chains (depending on the Selector, see below), and a link with a zero score is due to be pruned from the data. One of the two words may be empty, signifying that the link in question marks the beginning or end of a line. When a link is encountered in the input data, its score is incremented by +1, minus any adjustment by the Scorer.</p>
+
+<p class="subheader">Scorers</p>
+
+<p>A <i>Scorer</i> is a function which updates a link's score when it's encountered in input data. It does this by comparing the last time the link was encountered to the current time.<br/>
+For example, let's say we want to adjust the score of the link "Hello"-"world!". The link was last encountered 7 hours ago, and we've been programmed to decrease scores by 1 point for every hour they age. So the adjusted score would be 10-7 = 3.<br/>
+Scorers are also adjust scores by "link age", or the number of links since we last saw the link in question. For example, if 10,000 links have been updated since the last time we saw "Hello"-"world!" and we were programmed to decrease scores by 1 point for every 5,000 words, then the adjusted score would be 10-2 = 8.<br/>
+In either of these cases, a higher adjustment factor will lead to links getting pruned more quickly, and vice versa. Adjustments can also be disabled entirely if such pruning is undesired.</p>
+
+<p class="subheader">Selectors</p>
+
+<p>A <i>Selector</i> is a function which, given a set of candidate links, chooses one according to its score. Selectors could ignore the score and be completely randomized, or they could always choose the best scoring link of the set and be completely deterministic, or they could select according to some weighting in between. This component determines the "randomness" of the produced chains.</p>
+
+<p class="subheader">Backends</p>
+
+<p>Backends keep a tally of the current links and their scores, pruning links with zero scores periodically. Backends exist for temporary hash maps, or persistent storage to a SQLite db file.<br/>
+As an implementation detail, backends may implement the "ICacheable" interface, which allows them to be wrapped in a hash map-based cache. This cache allows using a relatively slow backend, only retrieving data when it doesn't exist in the cache, and only updating the underlying data when told to flush or close. For example, this is supported by the SQLite backend to avoid inserting against it too often, instead updating the file in bulk transactions.</p>
+
+<p class="header">Operations</p>
+
+<p class="subheader">Inserting Lines</p>
+
+<p>Each pair of words in the line is passed to the backend, which either creates a new Link with score 1, or which increments the existing Link's score by 1 then adjusts it using the Scorer.</p>
+
+<p class="subheader">Retrieving Chains</p>
+
+<p>If a search word was specified, a search is done for any links which begin or end with that word. Using the Selector, the output chain is "grown" in both directions from the word until a "start" or "end" link is encountered, or until the specified character/word limit is reached. If no search word was specified, a random link is chosen, and a chain is grown from that link in the same manner.</p>
+<p class="header">Using Marky</p>
+
+<p>Given the above components, Marky itself is fairly straightforward to use. You just need to pick a Scorer, Selector, and Backend which is relevant to your application. Or you can include a custom component of your own. To see some example usage, just take a look at the <i>marky-file</i> code.</p>
