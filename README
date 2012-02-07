@@ -1,0 +1,9 @@
+Building marky:
+
+1) Optionally install libsqlite3-dev
+2) "mkdir bin; cd bin"
+3) "cmake .."
+4) "make"
+5) See "bin/apps/marky-file"
+
+View the project site for more information: http://nickbp.com/marky
