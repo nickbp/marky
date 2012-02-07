@@ -13,9 +13,9 @@ Marky's functionality can be best understood by seeing how its underlying compon
 <p class="subheader">Scorers</p>
 
 <p>A <i>Scorer</i> is a function which updates a link's score when it's encountered in input data. It does this by comparing the last time the link was encountered to the current time.<br/>
-For example, let's say we want to adjust the score of the link "Hello"-"world!". The link was last encountered 7 hours ago, and we've been programmed to decrease scores by 1 point for every hour they age. So the adjusted score would be 10-7 = 3.<br/>
-Scorers are also adjust scores by "link age", or the number of links since we last saw the link in question. For example, if 10,000 links have been updated since the last time we saw "Hello"-"world!" and we were programmed to decrease scores by 1 point for every 5,000 words, then the adjusted score would be 10-2 = 8.<br/>
-In either of these cases, a higher adjustment factor will lead to links getting pruned more quickly, and vice versa. Adjustments can also be disabled entirely if such pruning is undesired.</p>
+For example, let's say we want to adjust the score of the link "Hello"-"world!". The link was last encountered 7 hours ago, and we've been programmed to decrease scores by 1 point for every hour they age. So the adjusted score would be 10-7 = 3.</p>
+<p>Scorers are also adjust scores by "link age", or the number of links since we last saw the link in question. For example, if 10,000 links have been updated since the last time we saw "Hello"-"world!" and we were programmed to decrease scores by 1 point for every 5,000 words, then the adjusted score would be 10-2 = 8.</p>
+<p>In either of these cases, a higher adjustment factor will lead to links getting pruned more quickly, and vice versa. Adjustments can also be disabled entirely if such pruning is undesired.</p>
 
 <p class="subheader">Selectors</p>
 
@@ -23,8 +23,8 @@ In either of these cases, a higher adjustment factor will lead to links getting 
 
 <p class="subheader">Backends</p>
 
-<p>Backends keep a tally of the current links and their scores, pruning links with zero scores periodically. Backends exist for temporary hash maps, or persistent storage to a SQLite db file.<br/>
-As an implementation detail, backends may implement the "ICacheable" interface, which allows them to be wrapped in a hash map-based cache. This cache allows using a relatively slow backend, only retrieving data when it doesn't exist in the cache, and only updating the underlying data when told to flush or close. For example, this is supported by the SQLite backend to avoid inserting against it too often, instead updating the file in bulk transactions.</p>
+<p>Backends keep a tally of the current links and their scores, pruning links with zero scores periodically. Backends exist for temporary hash maps, or persistent storage to a SQLite db file.</p>
+<p>As an implementation detail, backends may implement the "ICacheable" interface, which allows them to be wrapped in a hash map-based cache. This cache allows using a relatively slow backend, only retrieving data when it doesn't exist in the cache, and only updating the underlying data when told to flush or close. For example, this is supported by the SQLite backend to avoid inserting against it too often, instead updating the file in bulk transactions.</p>
 
 <p class="header">Operations</p>
 
