@@ -30,16 +30,28 @@ bool marky::Marky::insert(const line_t& line) {
 	if (line.empty()) { return true; }
 
 	line_t::const_iterator
-		last_word = line.begin(),
-		cur_word = ++line.begin();
+		prev_word = line.begin(),
+		next_word = ++line.begin();
 
-	while (cur_word != line.end()) {
-		if (!backend->increment_link(scorer, *last_word, *cur_word)) {
+	/* mark beginning of line */
+	if (!backend->increment_link(scorer, "", *prev_word)) {
+		return false;
+	}
+
+	/* links across each pair of words in line */
+	while (next_word != line.end()) {
+		if (!backend->increment_link(scorer, *prev_word, *next_word)) {
 			return false;
 		}
-		++last_word;
-		++cur_word;
+		++prev_word;
+		++next_word;
 	}
+
+	/* mark end of line */
+	if (!backend->increment_link(scorer, *prev_word, "")) {
+		return false;
+	}
+
 	return true;
 }
 
@@ -94,8 +106,13 @@ bool marky::Marky::grow(line_t& line,
 			}
 			if (link) {
 				const word_t& word = link->next;
-				char_size += word.size();/* ignore space between words */
-				line.push_back(word);
+				if (word.empty()) {
+					/* end of line */
+					right_dead = true;
+				} else {
+					char_size += word.size();/* ignore space between words */
+					line.push_back(word);
+				}
 			} else {
 				right_dead = true;
 			}
@@ -112,8 +129,13 @@ bool marky::Marky::grow(line_t& line,
 			}
 			if (link) {
 				const word_t& word = link->prev;
-				char_size += word.size();/* ignore space between words */
-				line.push_front(word);
+				if (word.empty()) {
+					/* start of line */
+					left_dead = true;
+				} else {
+					char_size += word.size();/* ignore space between words */
+					line.push_front(word);
+				}
 			} else {
 				left_dead = true;
 			}
