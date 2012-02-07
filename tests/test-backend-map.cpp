@@ -100,15 +100,21 @@ TEST(Map, get_random) {
 	/* each link loses a point if it's not updated within 2 increments */
 	scorer_t scorer = scorers::link_adj(2);
 
-	/* add two links, assume we'll be getting back the second one
-	   (if this changes, update the test) */
+	/* add two links, assume we'll be getting back one of them */
 	ASSERT_TRUE(backend.increment_link(scorer, "a", "b"));
 	ASSERT_TRUE(backend.increment_link(scorer, "c", "d"));
 	state_t state(new _state_t(2,2));
 
 	EXPECT_TRUE(backend.get_random(rand));
-	EXPECT_TRUE((bool)rand);
-	CHECK_LINK(scorer, state, rand, "c", "d", 1);
+	ASSERT_TRUE((bool)rand);
+	if (rand->prev == "a") {
+		EXPECT_EQ("b", rand->next);
+		EXPECT_EQ(0, rand->score(scorer, state));
+	} else {
+		EXPECT_EQ("c", rand->prev);
+		EXPECT_EQ("d", rand->next);
+		EXPECT_EQ(1, rand->score(scorer, state));
+	}
 }
 
 #define INC_STATE(STATE) ++state->time; ++state->link;
