@@ -27,69 +27,69 @@
 #include <list>
 
 namespace marky {
-	typedef std::string word_t;
-	typedef size_t score_t;
+    typedef std::string word_t;
+    typedef size_t score_t;
 
-	/* A container for the current state of the backend.
-	   Used by scorers to adjust a link's score */
-	struct _state_t {
-		_state_t(time_t time, size_t link)
-			: time(time), link(link) { }
-		time_t time;
-		size_t link;
-	};
-	typedef std::shared_ptr<_state_t> state_t;
+    /* A container for the current state of the backend.
+       Used by scorers to adjust a link's score */
+    struct _state_t {
+        _state_t(time_t time, size_t link)
+            : time(time), link(link) { }
+        time_t time;
+        size_t link;
+    };
+    typedef std::shared_ptr<_state_t> state_t;
 
-	class Link;
-	/* Calculate the adjusted score for a link.
-	   'score_state' is the backend state from the last time the link was encountered,
-	   'cur_state' is the backend state from right now. */
-	typedef std::function<score_t
-		(score_t score, const _state_t& last_score_state, const _state_t& now_state)> scorer_t;
+    class Link;
+    /* Calculate the adjusted score for a link.
+       'score_state' is the backend state from the last time the link was encountered,
+       'cur_state' is the backend state from right now. */
+    typedef std::function<score_t
+        (score_t score, const _state_t& last_score_state, const _state_t& now_state)> scorer_t;
 
-	class Link {
-	public:
-		Link(const word_t& prev, const word_t& next,
-				time_t time, size_t link, score_t score = 1)
-			: prev(prev), next(next), state_(time, link), score_(score) { }
+    class Link {
+    public:
+        Link(const word_t& prev, const word_t& next,
+                time_t time, size_t link, score_t score = 1)
+            : prev(prev), next(next), state_(time, link), score_(score) { }
 
-		/* get adjusted score according to the given state */
-		inline score_t score(scorer_t scorer, const state_t& cur_state) {
-			return scorer(score_, state_, *cur_state);
-		}
-		/* increments score and adjusts according to the given state */
-		inline score_t increment(scorer_t scorer, const state_t& cur_state) {
-			/* give scorer our current state */
-			score_ = 1 + score(scorer, cur_state);
-			/* reset the state 'clock' to now */
-			state_ = *cur_state;
-			return score_;
-		}
+        /* get adjusted score according to the given state */
+        inline score_t score(scorer_t scorer, const state_t& cur_state) {
+            return scorer(score_, state_, *cur_state);
+        }
+        /* increments score and adjusts according to the given state */
+        inline score_t increment(scorer_t scorer, const state_t& cur_state) {
+            /* give scorer our current state */
+            score_ = 1 + score(scorer, cur_state);
+            /* reset the state 'clock' to now */
+            state_ = *cur_state;
+            return score_;
+        }
 
-		/* get current score as of last-seen state */
-		inline score_t cur_score() const {
-			return score_;
-		}
-		/* get current last-seen state */
-		inline const _state_t& cur_state() const {
-			return state_;
-		}
+        /* get current score as of last-seen state */
+        inline score_t cur_score() const {
+            return score_;
+        }
+        /* get current last-seen state */
+        inline const _state_t& cur_state() const {
+            return state_;
+        }
 
-		const word_t prev;
-		const word_t next;
+        const word_t prev;
+        const word_t next;
 
-	private:
-		/* state_ holds the last time this link was seen, and its link 'score',
-		   which is incremented each time the link is encountered and
-		   effectively decremented as other links appear */
-		_state_t state_;
-		/* updated alongside state_ when increment() is called */
-		score_t score_;
-	};
-	typedef std::shared_ptr<Link> link_t;
+    private:
+        /* state_ holds the last time this link was seen, and its link 'score',
+           which is incremented each time the link is encountered and
+           effectively decremented as other links appear */
+        _state_t state_;
+        /* updated alongside state_ when increment() is called */
+        score_t score_;
+    };
+    typedef std::shared_ptr<Link> link_t;
 
-	typedef std::list<link_t> _links_t;
-	typedef std::shared_ptr<_links_t> links_t;
+    typedef std::list<link_t> _links_t;
+    typedef std::shared_ptr<_links_t> links_t;
 }
 
 #endif

@@ -22,87 +22,87 @@
 using namespace std::placeholders;
 
 namespace marky {
-	link_t select_best(const links_t& links, const scorer_t& scorer,
-			const state_t& state) {
-		/* shortcuts: */
-		if (links->empty()) { return link_t(); }
-		if (links->size() == 1) { return links->front(); }
+    link_t select_best(const links_t& links, const scorer_t& scorer,
+            const state_t& state) {
+        /* shortcuts: */
+        if (links->empty()) { return link_t(); }
+        if (links->size() == 1) { return links->front(); }
 
-		_links_t::const_iterator best_iter = links->begin();
-		score_t best_score = (*best_iter)->score(scorer, state);
+        _links_t::const_iterator best_iter = links->begin();
+        score_t best_score = (*best_iter)->score(scorer, state);
 
-		const _links_t::const_iterator& end = links->end();
-		for (_links_t::const_iterator iter = ++links->begin();
-			 iter != end; ++iter) {
-			score_t score = (*iter)->score(scorer, state);
-			if (score > best_score) {
-				best_iter = iter;
-				best_score = score;
-			}
-		}
+        const _links_t::const_iterator& end = links->end();
+        for (_links_t::const_iterator iter = ++links->begin();
+             iter != end; ++iter) {
+            score_t score = (*iter)->score(scorer, state);
+            if (score > best_score) {
+                best_iter = iter;
+                best_score = score;
+            }
+        }
 
-		return *best_iter;
-	}
+        return *best_iter;
+    }
 
-	link_t select_random(const links_t& links) {
-		/* shortcuts: save us a rand() call: */
-		if (links->empty()) { return link_t(); }
-		if (links->size() == 1) { return links->front(); }
+    link_t select_random(const links_t& links) {
+        /* shortcuts: save us a rand() call: */
+        if (links->empty()) { return link_t(); }
+        if (links->size() == 1) { return links->front(); }
 
-		size_t select = pick_rand(links->size());
+        size_t select = pick_rand(links->size());
 
-		/* get the nth element from the std::list */
-		_links_t::const_iterator iter = links->begin();
-		while (select != 0) {
-			++iter;
-			--select;
-		}
-		return *iter;
-	}
+        /* get the nth element from the std::list */
+        _links_t::const_iterator iter = links->begin();
+        while (select != 0) {
+            ++iter;
+            --select;
+        }
+        return *iter;
+    }
 
-	link_t select_weighted(const links_t& links, const scorer_t& scorer,
-			const state_t& state, int8_t /*weight_factor*/) {//TODO
-		/* shortcuts: save us a rand() call: */
-		if (links->empty()) { return link_t(); }
-		if (links->size() == 1) { return links->front(); }
+    link_t select_weighted(const links_t& links, const scorer_t& scorer,
+            const state_t& state, int8_t /*weight_factor*/) {//TODO
+        /* shortcuts: save us a rand() call: */
+        if (links->empty()) { return link_t(); }
+        if (links->size() == 1) { return links->front(); }
 
-		/* first pass: get sum score from which to derive 'select' */
-		score_t sum_score = 0;
-		const _links_t::const_iterator& end = links->end();
-		for (_links_t::const_iterator iter = links->begin();
-			 iter != end; ++iter) {
-			sum_score += (*iter)->score(scorer, state);
-		}
+        /* first pass: get sum score from which to derive 'select' */
+        score_t sum_score = 0;
+        const _links_t::const_iterator& end = links->end();
+        for (_links_t::const_iterator iter = links->begin();
+             iter != end; ++iter) {
+            sum_score += (*iter)->score(scorer, state);
+        }
 
-		score_t select = pick_rand(sum_score);
+        score_t select = pick_rand(sum_score);
 
-		/* second pass: subtract scores from select, return when select hits 0 */
-		for (_links_t::const_iterator iter = links->begin();
-			 iter != end; ++iter) {
-			score_t s = (*iter)->score(scorer, state);
-			if (select < s) {
-				return *iter;
-			}
-			select -= s;
-		}
-		return link_t();
-	}
+        /* second pass: subtract scores from select, return when select hits 0 */
+        for (_links_t::const_iterator iter = links->begin();
+             iter != end; ++iter) {
+            score_t s = (*iter)->score(scorer, state);
+            if (select < s) {
+                return *iter;
+            }
+            select -= s;
+        }
+        return link_t();
+    }
 }
 
 marky::selector_t marky::selectors::best_always() {
-	return std::bind(&marky::select_best, _1, _2, _3);
+    return std::bind(&marky::select_best, _1, _2, _3);
 }
 
 marky::selector_t marky::selectors::random() {
-	return std::bind(&marky::select_random, _1);
+    return std::bind(&marky::select_random, _1);
 }
 
 marky::selector_t marky::selectors::best_weighted(uint8_t weight_factor/*=128*/) {
-	/* optimization at 255 and 0: */
-	if (weight_factor == 255) {
-		return best_always();
-	} else if (weight_factor == 0) {
-		return random();
-	}
-	return std::bind(&marky::select_weighted, _1, _2, _3, weight_factor);
+    /* optimization at 255 and 0: */
+    if (weight_factor == 255) {
+        return best_always();
+    } else if (weight_factor == 0) {
+        return random();
+    }
+    return std::bind(&marky::select_weighted, _1, _2, _3, weight_factor);
 }

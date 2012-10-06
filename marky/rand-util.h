@@ -22,10 +22,10 @@
 #include <stddef.h>//size_t
 
 namespace marky {
-	/* Return a value within [0,max).
-	 * This has internal state and assumes it won't be simultaneously called
-	 * across threads, but it shouldn't conflict with other running code. */
-	size_t pick_rand(size_t max);
+    /* Return a value within [0,max).
+     * This has internal state and assumes it won't be simultaneously called
+     * across threads, but it shouldn't conflict with other running code. */
+    size_t pick_rand(size_t max);
 }
 
 #endif

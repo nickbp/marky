@@ -49,29 +49,29 @@
 #cmakedefine BUILD_BACKEND_SQLITE
 
 namespace config {
-	static const int
-		VERSION_MAJOR = @marky_VERSION_MAJOR@,
-		VERSION_MINOR = @marky_VERSION_MINOR@,
-		VERSION_PATCH = @marky_VERSION_PATCH@;
+    static const int
+        VERSION_MAJOR = @marky_VERSION_MAJOR@,
+        VERSION_MINOR = @marky_VERSION_MINOR@,
+        VERSION_PATCH = @marky_VERSION_PATCH@;
 
 
-	static const char VERSION_STRING[] = "@marky_VERSION_MAJOR@.@marky_VERSION_MINOR@.@marky_VERSION_PATCH@"
+    static const char VERSION_STRING[] = "@marky_VERSION_MAJOR@.@marky_VERSION_MINOR@.@marky_VERSION_PATCH@"
 #ifdef BUILD_BACKEND_SQLITE
-		"-sqlite"
+        "-sqlite"
 #else
-		"-nodb"
+        "-nodb"
 #endif
-		;
-	static const char BUILD_DATE[] = __TIMESTAMP__;
+        ;
+    static const char BUILD_DATE[] = __TIMESTAMP__;
 
-	extern bool debug_enabled;
-	extern FILE *fout;
-	extern FILE *ferr;
+    extern bool debug_enabled;
+    extern FILE *fout;
+    extern FILE *ferr;
 
-	/* DONT USE THESE, use DEBUG()/LOG()/ERROR() instead. */
-	void _debug(const char* format, ...);
-	void _log(const char* format, ...);
-	void _error(const char* format, ...);
+    /* DONT USE THESE, use DEBUG()/LOG()/ERROR() instead. */
+    void _debug(const char* format, ...);
+    void _log(const char* format, ...);
+    void _error(const char* format, ...);
 }
 
 #endif

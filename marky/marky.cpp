@@ -20,126 +20,126 @@
 #include <assert.h>
 
 marky::Marky::Marky(backend_t backend, selector_t selector, scorer_t scorer)
-	: backend(backend), selector(selector), scorer(scorer) {
-	assert(backend);
-	assert(selector);
-	assert(scorer);
+    : backend(backend), selector(selector), scorer(scorer) {
+    assert(backend);
+    assert(selector);
+    assert(scorer);
 }
 
 bool marky::Marky::insert(const line_t& line) {
-	if (line.empty()) { return true; }
+    if (line.empty()) { return true; }
 
-	line_t::const_iterator
-		prev_word = line.begin(),
-		next_word = ++line.begin();
+    line_t::const_iterator
+        prev_word = line.begin(),
+        next_word = ++line.begin();
 
-	/* mark beginning of line */
-	if (!backend->increment_link(scorer, "", *prev_word)) {
-		return false;
-	}
+    /* mark beginning of line */
+    if (!backend->increment_link(scorer, "", *prev_word)) {
+        return false;
+    }
 
-	/* links across each pair of words in line */
-	while (next_word != line.end()) {
-		if (!backend->increment_link(scorer, *prev_word, *next_word)) {
-			return false;
-		}
-		++prev_word;
-		++next_word;
-	}
+    /* links across each pair of words in line */
+    while (next_word != line.end()) {
+        if (!backend->increment_link(scorer, *prev_word, *next_word)) {
+            return false;
+        }
+        ++prev_word;
+        ++next_word;
+    }
 
-	/* mark end of line */
-	if (!backend->increment_link(scorer, *prev_word, "")) {
-		return false;
-	}
+    /* mark end of line */
+    if (!backend->increment_link(scorer, *prev_word, "")) {
+        return false;
+    }
 
-	return true;
+    return true;
 }
 
 bool marky::Marky::produce(line_t& line, const word_t& search/*=word_t()*/,
-		size_t length_limit_words/*=0*/, size_t length_limit_chars/*=0*/) {
-	if (search.empty()) {
-		link_t rand;
-		if (!backend->get_random(rand)) {/* backend err */
-			return false;
-		}
-		if (!rand) {/* no data */
-			return true;
-		}
-		line.push_back(rand->prev);
-		line.push_back(rand->next);
-		return grow(line, length_limit_words, length_limit_chars);
-	} else {
-		line.push_back(search);
-		if (!grow(line, length_limit_words, length_limit_chars)) {/* backend err */
-			line.clear();
-			return false;
-		} else if (line.size() == 1) {/* didn't find 'search' */
-			line.clear();
-		}
-		return true;
-	}
+        size_t length_limit_words/*=0*/, size_t length_limit_chars/*=0*/) {
+    if (search.empty()) {
+        link_t rand;
+        if (!backend->get_random(rand)) {/* backend err */
+            return false;
+        }
+        if (!rand) {/* no data */
+            return true;
+        }
+        line.push_back(rand->prev);
+        line.push_back(rand->next);
+        return grow(line, length_limit_words, length_limit_chars);
+    } else {
+        line.push_back(search);
+        if (!grow(line, length_limit_words, length_limit_chars)) {/* backend err */
+            line.clear();
+            return false;
+        } else if (line.size() == 1) {/* didn't find 'search' */
+            line.clear();
+        }
+        return true;
+    }
 }
 
 #define CHECK_LIMIT(size, limit) (limit == 0 || size < limit)
 #define CHECK_CHAR_LIMIT(char_size, limit) (limit == 0 || char_size < limit)
 
 bool marky::Marky::grow(line_t& line,
-		size_t length_limit_words/*=0*/, size_t length_limit_chars/*=0*/) {
-	if (line.empty()) { return false; }
-	/* flags marking whether we've hit a dead end in either direction: */
-	bool left_dead = false, right_dead = false;
-	size_t char_size = 0;
-	for (line_t::const_iterator iter = line.begin();
-		 iter != line.end(); ++iter) {
-		char_size += iter->size();/* ignore space between words */
-	}
-	link_t link;
-	while (!left_dead || !right_dead) {
-		if (!CHECK_LIMIT(line.size(), length_limit_words) ||
-				!CHECK_LIMIT(char_size, length_limit_chars)) {
-			break;
-		}
+        size_t length_limit_words/*=0*/, size_t length_limit_chars/*=0*/) {
+    if (line.empty()) { return false; }
+    /* flags marking whether we've hit a dead end in either direction: */
+    bool left_dead = false, right_dead = false;
+    size_t char_size = 0;
+    for (line_t::const_iterator iter = line.begin();
+         iter != line.end(); ++iter) {
+        char_size += iter->size();/* ignore space between words */
+    }
+    link_t link;
+    while (!left_dead || !right_dead) {
+        if (!CHECK_LIMIT(line.size(), length_limit_words) ||
+                !CHECK_LIMIT(char_size, length_limit_chars)) {
+            break;
+        }
 
-		if (!right_dead) {
-			if (!backend->get_prev(selector, scorer, line.back(), link)) {
-				return false;
-			}
-			if (link) {
-				const word_t& word = link->next;
-				if (word.empty()) {
-					/* end of line */
-					right_dead = true;
-				} else {
-					char_size += word.size();/* ignore space between words */
-					line.push_back(word);
-				}
-			} else {
-				right_dead = true;
-			}
-		}
+        if (!right_dead) {
+            if (!backend->get_prev(selector, scorer, line.back(), link)) {
+                return false;
+            }
+            if (link) {
+                const word_t& word = link->next;
+                if (word.empty()) {
+                    /* end of line */
+                    right_dead = true;
+                } else {
+                    char_size += word.size();/* ignore space between words */
+                    line.push_back(word);
+                }
+            } else {
+                right_dead = true;
+            }
+        }
 
-		if (!CHECK_LIMIT(line.size(), length_limit_words) ||
-				!CHECK_LIMIT(char_size, length_limit_chars)) {
-			break;
-		}
+        if (!CHECK_LIMIT(line.size(), length_limit_words) ||
+                !CHECK_LIMIT(char_size, length_limit_chars)) {
+            break;
+        }
 
-		if (!left_dead) {
-			if (!backend->get_next(selector, scorer, line.front(), link)) {
-				return false;
-			}
-			if (link) {
-				const word_t& word = link->prev;
-				if (word.empty()) {
-					/* start of line */
-					left_dead = true;
-				} else {
-					char_size += word.size();/* ignore space between words */
-					line.push_front(word);
-				}
-			} else {
-				left_dead = true;
-			}
-		}
-	}
-	return true;
+        if (!left_dead) {
+            if (!backend->get_next(selector, scorer, line.front(), link)) {
+                return false;
+            }
+            if (link) {
+                const word_t& word = link->prev;
+                if (word.empty()) {
+                    /* start of line */
+                    left_dead = true;
+                } else {
+                    char_size += word.size();/* ignore space between words */
+                    line.push_front(word);
+                }
+            } else {
+                left_dead = true;
+            }
+        }
+    }
+    return true;
 }

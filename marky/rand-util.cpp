@@ -22,14 +22,14 @@
 #include <stdlib.h>//rand()
 
 namespace {
-	inline unsigned int get_seed() {
-		struct timeval tv;
-		gettimeofday(&tv, NULL);
-		return (unsigned int)tv.tv_usec;
-	}
+    inline unsigned int get_seed() {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        return (unsigned int)tv.tv_usec;
+    }
 }
 
 size_t marky::pick_rand(size_t max) {
-	static unsigned int seed = get_seed();
-	return rand_r(&seed) % max;
+    static unsigned int seed = get_seed();
+    return rand_r(&seed) % max;
 }

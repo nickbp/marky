@@ -24,54 +24,54 @@
 #include "backend.h"
 
 namespace marky {
-	/* A cache wrapper around an ICacheable. */
-	class Backend_Cache : public IBackend {
-	public:
-		Backend_Cache(cacheable_t backend);
-		virtual ~Backend_Cache();
+    /* A cache wrapper around an ICacheable. */
+    class Backend_Cache : public IBackend {
+    public:
+        Backend_Cache(cacheable_t backend);
+        virtual ~Backend_Cache();
 
-		bool get_random(link_t& random);
+        bool get_random(link_t& random);
 
-		bool get_prev(selector_t selector, scorer_t scorer,
-				const word_t& word, link_t& prev);
-		bool get_next(selector_t selector, scorer_t scorer,
-				const word_t& word, link_t& next);
+        bool get_prev(selector_t selector, scorer_t scorer,
+                const word_t& word, link_t& prev);
+        bool get_next(selector_t selector, scorer_t scorer,
+                const word_t& word, link_t& next);
 
-		bool increment_link(scorer_t scorer,
-				const word_t& first, const word_t& second);
+        bool increment_link(scorer_t scorer,
+                const word_t& first, const word_t& second);
 
-		bool prune(scorer_t scorer);
+        bool prune(scorer_t scorer);
 
-	private:
-		template <typename T>
-		struct pair_hash {
-		public:
-			inline size_t operator()(const std::pair<T,T>& p) const {
-				return hash(p.first) ^ hash(p.second);
-			}
-		private:
-			const std::hash<T> hash;
-		};
+    private:
+        template <typename T>
+        struct pair_hash {
+        public:
+            inline size_t operator()(const std::pair<T,T>& p) const {
+                return hash(p.first) ^ hash(p.second);
+            }
+        private:
+            const std::hash<T> hash;
+        };
 
-		typedef std::unordered_map<word_t, links_t> word_to_links_t;
-		typedef std::unordered_map<std::pair<word_t, word_t>,
-			link_t, pair_hash<word_t> > words_to_link_t;
+        typedef std::unordered_map<word_t, links_t> word_to_links_t;
+        typedef std::unordered_map<std::pair<word_t, word_t>,
+            link_t, pair_hash<word_t> > words_to_link_t;
 
-		bool pick_word(const word_to_links_t::iterator& got_iter,
-				word_to_links_t& changed_map,
-				selector_t selector, scorer_t scorer,
-				const word_t& word, link_t& out);
+        bool pick_word(const word_to_links_t::iterator& got_iter,
+                word_to_links_t& changed_map,
+                selector_t selector, scorer_t scorer,
+                const word_t& word, link_t& out);
 
-		cacheable_t wrapme;
-		state_t state;
+        cacheable_t wrapme;
+        state_t state;
 
-		/* prev OR next -> links/NULL */
-		word_to_links_t got_prevs, got_nexts,/* unmodified words we've gotten from wrapme */
-			changed_prevs, changed_nexts;/* modified words from increment_link */
-		/* prev AND next -> link */
-		words_to_link_t got_words,/* pool of all unmodified words */
-			changed_words;/* pool of all modified words */
-	};
+        /* prev OR next -> links/NULL */
+        word_to_links_t got_prevs, got_nexts,/* unmodified words we've gotten from wrapme */
+            changed_prevs, changed_nexts;/* modified words from increment_link */
+        /* prev AND next -> link */
+        words_to_link_t got_words,/* pool of all unmodified words */
+            changed_words;/* pool of all modified words */
+    };
 }
 
 #endif

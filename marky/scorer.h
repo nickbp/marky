@@ -24,24 +24,24 @@
 #include "link.h"
 
 namespace marky {
-	namespace scorers {
-		/* No adjustment; scores just increment sequentially as links are encountered. */
-		scorer_t no_adj();
+    namespace scorers {
+        /* No adjustment; scores just increment sequentially as links are encountered. */
+        scorer_t no_adj();
 
-		/* Adjusts scores to slowly decrease as other links are encountered.
-		 * score_decrement_links is the number of links which equate to a point decrease.
-		 * For example, a value of 100 means that a given link loses one point after
-		 * 100 other links have appeared.
-		 * If decrement is 0, the resulting scorer will be equivalent to no_adj(). */
-		scorer_t link_adj(size_t score_decrement_links);
+        /* Adjusts scores to slowly decrease as other links are encountered.
+         * score_decrement_links is the number of links which equate to a point decrease.
+         * For example, a value of 100 means that a given link loses one point after
+         * 100 other links have appeared.
+         * If decrement is 0, the resulting scorer will be equivalent to no_adj(). */
+        scorer_t link_adj(size_t score_decrement_links);
 
-		/* Adjusts scores to slowly decrease as time passes.
-		 * score_decrement_seconds is the number of seconds which equate to a point decrease.
-		 * For example, a value of 100 means that a given link loses one point after
-		 * 100 seconds have transpired.
-		 * If decrement is 0, the resulting scorer will be equivalent to no_adj(). */
-		scorer_t time_adj(size_t score_decrement_seconds);
-	}
+        /* Adjusts scores to slowly decrease as time passes.
+         * score_decrement_seconds is the number of seconds which equate to a point decrease.
+         * For example, a value of 100 means that a given link loses one point after
+         * 100 seconds have transpired.
+         * If decrement is 0, the resulting scorer will be equivalent to no_adj(). */
+        scorer_t time_adj(size_t score_decrement_seconds);
+    }
 }
 
 #endif

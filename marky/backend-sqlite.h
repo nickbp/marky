@@ -24,47 +24,47 @@
 struct sqlite3;
 
 namespace marky {
-	/* A backend which uses a sqlite3 database for storing persistent state. */
-	class Backend_SQLite : public ICacheable {
-	public:
-		/* Returns a SQLite backend, or an empty ptr if there was an error
-		 * when creating it. */
-		static cacheable_t create_cacheable(const std::string& db_file_path);
-		static backend_t create_backend(const std::string& db_file_path);
+    /* A backend which uses a sqlite3 database for storing persistent state. */
+    class Backend_SQLite : public ICacheable {
+    public:
+        /* Returns a SQLite backend, or an empty ptr if there was an error
+         * when creating it. */
+        static cacheable_t create_cacheable(const std::string& db_file_path);
+        static backend_t create_backend(const std::string& db_file_path);
 
-		virtual ~Backend_SQLite();
+        virtual ~Backend_SQLite();
 
-		/* for IBackend: */
-		bool get_random(link_t& random);
+        /* for IBackend: */
+        bool get_random(link_t& random);
 
-		bool get_prev(selector_t selector, scorer_t scorer,
-				const word_t& word, link_t& prev);
-		bool get_next(selector_t selector, scorer_t scorer,
-				const word_t& word, link_t& next);
+        bool get_prev(selector_t selector, scorer_t scorer,
+                const word_t& word, link_t& prev);
+        bool get_next(selector_t selector, scorer_t scorer,
+                const word_t& word, link_t& next);
 
-		bool increment_link(scorer_t scorer,
-				const word_t& first, const word_t& second);
+        bool increment_link(scorer_t scorer,
+                const word_t& first, const word_t& second);
 
-		bool prune(scorer_t scorer);
+        bool prune(scorer_t scorer);
 
-		/* for ICacheable: */
-		state_t state();
+        /* for ICacheable: */
+        state_t state();
 
-		bool get_prevs(const word_t& word, links_t& out);
-		bool get_nexts(const word_t& word, links_t& out);
-		bool get_link(const word_t& first, const word_t& second, link_t& out);
+        bool get_prevs(const word_t& word, links_t& out);
+        bool get_nexts(const word_t& word, links_t& out);
+        bool get_link(const word_t& first, const word_t& second, link_t& out);
 
-		bool flush(const links_t& links, const state_t& state);
+        bool flush(const links_t& links, const state_t& state);
 
-	private:
-		Backend_SQLite(const std::string& db_file_path);
-		bool init();
+    private:
+        Backend_SQLite(const std::string& db_file_path);
+        bool init();
 
-		const std::string path;
-		sqlite3* db;
-		state_t state_;
-		bool state_changed;
-	};
+        const std::string path;
+        sqlite3* db;
+        state_t state_;
+        bool state_changed;
+    };
 }
 
 #endif
