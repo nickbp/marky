@@ -3,7 +3,7 @@
 
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011-2012  Nicholas Parker
+  Copyright (C) 2011-2014  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -24,27 +24,19 @@
 #define _PRINT_PREFIX "%s (%s:%d) "
 #define _PRINT_ARGS __FUNCTION__, __LINE__
 
+//#define DEBUG_ENABLED
+
 /* Some simple print helpers */
+#ifdef DEBUG_ENABLED
+#define DEBUG(...) config::_debug(__FUNCTION__, __VA_ARGS__)
+#else
+#define DEBUG(...)
+#endif
+#define LOG(...) config::_log(__FUNCTION__, __VA_ARGS__)
+#define ERROR(...) config::_error(__FUNCTION__, __VA_ARGS__)
 
-/* Format str and file/line prefix */
-#define DEBUG(format, ...) config::_debug(_PRINT_PREFIX format, "DEBUG", _PRINT_ARGS, __VA_ARGS__)
-#define LOG(format, ...) config::_log(_PRINT_PREFIX format, "LOG", _PRINT_ARGS, __VA_ARGS__)
-#define ERROR(format, ...) config::_error(_PRINT_PREFIX format, "ERR", _PRINT_ARGS, __VA_ARGS__)
-
-/* No file/line prefix ("RAW") */
-#define DEBUG_RAW(format, ...) config::_debug(format, __VA_ARGS__)
-#define LOG_RAW(format, ...) config::_log(format, __VA_ARGS__)
-#define ERROR_RAW(format, ...) config::_error(format, __VA_ARGS__)
-
-/* No format str ("Direct" -> "DIR") */
-#define DEBUG_DIR(...) config::_debug(_PRINT_PREFIX "%s", "DEBUG", _PRINT_ARGS, __VA_ARGS__)
-#define LOG_DIR(...) config::_log(_PRINT_PREFIX "%s", "LOG", _PRINT_ARGS, __VA_ARGS__)
-#define ERROR_DIR(...) config::_error(_PRINT_PREFIX "%s", "ERR", _PRINT_ARGS, __VA_ARGS__)
-
-/* No format str and no file/line prefix */
-#define DEBUG_RAWDIR(...) config::_debug(__VA_ARGS__)
-#define LOG_RAWDIR(...) config::_log(__VA_ARGS__)
-#define ERROR_RAWDIR(...) config::_error(__VA_ARGS__)
+/* Skips "ERR" and func name in output. Used by help output. */
+#define PRINT_HELP(...) config::_error(NULL, __VA_ARGS__)
 
 #cmakedefine BUILD_BACKEND_SQLITE
 
@@ -53,7 +45,6 @@ namespace config {
         VERSION_MAJOR = @marky_VERSION_MAJOR@,
         VERSION_MINOR = @marky_VERSION_MINOR@,
         VERSION_PATCH = @marky_VERSION_PATCH@;
-
 
     static const char VERSION_STRING[] = "@marky_VERSION_MAJOR@.@marky_VERSION_MINOR@.@marky_VERSION_PATCH@"
 #ifdef BUILD_BACKEND_SQLITE
@@ -64,14 +55,21 @@ namespace config {
         ;
     static const char BUILD_DATE[] = __TIMESTAMP__;
 
-    extern bool debug_enabled;
     extern FILE *fout;
     extern FILE *ferr;
 
-    /* DONT USE THESE, use DEBUG()/LOG()/ERROR() instead. */
-    void _debug(const char* format, ...);
-    void _log(const char* format, ...);
-    void _error(const char* format, ...);
+    /* DONT USE THESE DIRECTLY, use DEBUG()/LOG()/ERROR() instead.
+     * The ones with a 'format' function support printf-style format before a list of args.
+     * The ones without are for direct unformatted output (eg "_error("func", "printme");") */
+#ifdef DEBUG_ENABLED
+    void _debug(const char* func, const char* format, ...);
+    void _debug(const char* func, ...);
+#endif
+
+    void _log(const char* func, const char* format, ...);
+    void _log(const char* func, ...);
+    void _error(const char* func, const char* format, ...);
+    void _error(const char* func, ...);
 }
 
 #endif

@@ -1,6 +1,6 @@
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2014  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -21,28 +21,35 @@
 
 using namespace marky;
 
-#define INIT_STATE(LINKS, SCORER, STATE)        \
-    links_t LINKS(new _links_t());                \
+static snippet_t make_snippet(const word_t& vala, const word_t& valb, time_t time, size_t count, score_t score) {
+    words_t words;
+    words.push_back(vala);
+    words.push_back(valb);
+    return snippet_t(new Snippet(words, time, count, score));
+}
+
+#define INIT_STATE(SNIPPETS, SCORER, STATE)        \
+    snippet_ptr_set_t SNIPPETS;                    \
     scorer_t SCORER = marky::scorers::no_adj();    \
-    state_t STATE(new _state_t(0,0));
+    State STATE(0,0);
 
 void check_distribution(marky::selector_t sel,
         size_t score_a, size_t score_b, size_t score_c,
         double distrib_a, double distrib_b, double distrib_c) {
-    INIT_STATE(links, scorer, state);
+    INIT_STATE(snippets, scorer, state);
 
-    link_t a(new Link("a", "b", 0, 0, score_a)),
-        b(new Link("b", "c", 0, 0, score_b)),
-        c(new Link("c", "a", 0, 0, score_c));
-    links->push_back(a);
-    links->push_back(b);
-    links->push_back(c);
+    snippet_t a(make_snippet("a", "b", 0, 0, score_a)),
+        b(make_snippet("b", "c", 0, 0, score_b)),
+        c(make_snippet("c", "a", 0, 0, score_c));
+    snippets.insert(a);
+    snippets.insert(b);
+    snippets.insert(c);
 
     /* repeat sel() a bunch, check output distribution */
     const size_t pick_count = 1000;
     size_t picked_a = 0, picked_b = 0, picked_c = 0;
     for (size_t i = 0; i < pick_count; ++i) {
-        link_t picked = sel(links, scorer, state);
+        snippet_t picked = sel(snippets, scorer, state);
         if (picked == a) {
             ++picked_a;
         } else if (picked == b) {
@@ -64,51 +71,51 @@ void check_distribution(marky::selector_t sel,
 // -- BEST ALWAYS
 
 TEST(BestAlways, empty) {
-    INIT_STATE(links, scorer, state);
+    INIT_STATE(snippets, scorer, state);
     marky::selector_t sel = marky::selectors::best_always();
 
-    EXPECT_TRUE(sel(links, scorer, state) == link_t());
+    EXPECT_TRUE(sel(snippets, scorer, state) == snippet_t());
 }
 
 TEST(BestAlways, one) {
-    INIT_STATE(links, scorer, state);
+    INIT_STATE(snippets, scorer, state);
     marky::selector_t sel = marky::selectors::best_always();
 
-    links->push_back(link_t(new Link("a", "b", 0, 0, 1)));
-    link_t pickme = links->back();
+    snippets.insert(make_snippet("a", "b", 0, 0, 1));
+    snippet_t pickme = *snippets.begin();
 
-    EXPECT_TRUE(sel(links, scorer, state) == pickme);
+    EXPECT_TRUE(sel(snippets, scorer, state) == pickme);
 }
 
 TEST(BestAlways, many) {
-    INIT_STATE(links, scorer, state);
+    INIT_STATE(snippets, scorer, state);
     marky::selector_t sel = marky::selectors::best_always();
 
-    links->push_back(link_t(new Link("a", "b", 0, 0, 1)));
-    links->push_back(link_t(new Link("b", "c", 0, 0, 2)));
-    links->push_back(link_t(new Link("c", "a", 0, 0, 3)));
-    link_t pickme = links->back();
+    snippets.insert(make_snippet("a", "b", 0, 0, 1));
+    snippets.insert(make_snippet("b", "c", 0, 0, 2));
+    snippets.insert(make_snippet("c", "a", 0, 0, 3));
+    snippet_t pickme = *snippets.begin();
 
-    EXPECT_TRUE(sel(links, scorer, state) == pickme);
+    EXPECT_TRUE(sel(snippets, scorer, state) == pickme);
 }
 
 // -- RANDOM
 
 TEST(Random, empty) {
-    INIT_STATE(links, scorer, state);
+    INIT_STATE(snippets, scorer, state);
     marky::selector_t sel = marky::selectors::random();
 
-    EXPECT_TRUE(sel(links, scorer, state) == link_t());
+    EXPECT_TRUE(sel(snippets, scorer, state) == snippet_t());
 }
 
 TEST(Random, one) {
-    INIT_STATE(links, scorer, state);
+    INIT_STATE(snippets, scorer, state);
     marky::selector_t sel = marky::selectors::random();
 
-    links->push_back(link_t(new Link("a", "b", 0, 0, 1)));
-    link_t pickme = links->back();
+    snippets.insert(make_snippet("a", "b", 0, 0, 1));
+    snippet_t pickme = *snippets.begin();
 
-    EXPECT_TRUE(sel(links, scorer, state) == pickme);
+    EXPECT_TRUE(sel(snippets, scorer, state) == pickme);
 }
 
 TEST(Random, many) {
@@ -119,20 +126,20 @@ TEST(Random, many) {
 // -- BEST WEIGHTED
 
 TEST(BestWeighted, empty) {
-    INIT_STATE(links, scorer, state);
+    INIT_STATE(snippets, scorer, state);
     marky::selector_t sel = marky::selectors::best_weighted();
 
-    EXPECT_TRUE(sel(links, scorer, state) == link_t());
+    EXPECT_TRUE(sel(snippets, scorer, state) == snippet_t());
 }
 
 TEST(BestWeighted, one) {
-    INIT_STATE(links, scorer, state);
+    INIT_STATE(snippets, scorer, state);
     marky::selector_t sel = marky::selectors::best_weighted();
 
-    links->push_back(link_t(new Link("a", "b", 0, 0, 1)));
-    link_t pickme = links->back();
+    snippets.insert(make_snippet("a", "b", 0, 0, 1));
+    snippet_t pickme = *snippets.begin();
 
-    EXPECT_TRUE(sel(links, scorer, state) == pickme);
+    EXPECT_TRUE(sel(snippets, scorer, state) == pickme);
 }
 
 TEST(BestWeighted, many) {

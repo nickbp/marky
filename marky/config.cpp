@@ -1,6 +1,6 @@
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2014  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -22,31 +22,66 @@
 
 namespace config {
     FILE *fout = stdout, *ferr = stderr;
-    bool debug_enabled = false;
 
-    void _debug(const char* format, ...) {
-        if (debug_enabled) {
-            va_list args;
-            va_start(args, format);
-            vfprintf(fout, format, args);
-            va_end(args);
-            fprintf(fout, "\n");
-        }
-    }
-
-    void _log(const char* format, ...) {
+#ifdef DEBUG_ENABLED
+    void _debug(const char* func, const char* format, ...) {
         va_list args;
         va_start(args, format);
+        if (func != NULL) {
+            fprintf(fout, "DEBUG %s ", func);
+        }
         vfprintf(fout, format, args);
         va_end(args);
         fprintf(fout, "\n");
     }
+    void _debug(const char* func, ...) {
+        va_list args;
+        va_start(args, func);
+        if (func != NULL) {
+            fprintf(fout, "DEBUG %s ", func);
+        }
+        vfprintf(fout, "%s\n", args);//only one arg, the string itself
+        va_end(args);
+    }
+#endif
 
-    void _error(const char* format, ...) {
+    void _log(const char* func, const char* format, ...) {
         va_list args;
         va_start(args, format);
+        if (func != NULL) {
+            fprintf(fout, "LOG %s() ", func);
+        }
+        vfprintf(fout, format, args);
+        va_end(args);
+        fprintf(fout, "\n");
+    }
+    void _log(const char* func, ...) {
+        va_list args;
+        va_start(args, func);
+        if (func != NULL) {
+            fprintf(fout, "LOG %s() ", func);
+        }
+        vfprintf(fout, "%s\n", args);//only one arg, the string itself
+        va_end(args);
+    }
+
+    void _error(const char* func, const char* format, ...) {
+        va_list args;
+        va_start(args, format);
+        if (func != NULL) {
+            fprintf(ferr, "ERROR %s() ", func);
+        }
         vfprintf(ferr, format, args);
         va_end(args);
         fprintf(ferr, "\n");
+    }
+    void _error(const char* func, ...) {
+        va_list args;
+        va_start(args, func);
+        if (func != NULL) {
+            fprintf(ferr, "ERROR %s() ", func);
+        }
+        vfprintf(ferr, "%s\n", args);//only one arg, the string itself
+        va_end(args);
     }
 }

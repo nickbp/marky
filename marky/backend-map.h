@@ -3,7 +3,7 @@
 
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011-2012  Nicholas Parker
+  Copyright (C) 2011-2014  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -24,42 +24,34 @@
 #include "backend.h"
 
 namespace marky {
-    /* A simple one-off backend which loses state upon destruction. */
+    /* A simple one-off backend which loses all state upon destruction. */
     class Backend_Map : public IBackend {
     public:
         Backend_Map();
 
-        bool get_random(link_t& random);
+        State create_state();
+        bool store_state(const State& state, scorer_t scorer);
 
-        bool get_prev(selector_t selector, scorer_t scorer,
-                const word_t& word, link_t& prev);
-        bool get_next(selector_t selector, scorer_t scorer,
-                const word_t& word, link_t& next);
+        bool get_random(const State& state, scorer_t scorer, word_t& word);
 
-        bool increment_link(scorer_t scorer,
-                const word_t& first, const word_t& second);
+        bool get_prev(const State& state, selector_t selector, scorer_t scorer,
+                const words_t& search_words, word_t& prev);
+        bool get_next(const State& state, selector_t selector, scorer_t scorer,
+                const words_t& search_words, word_t& next);
 
-        bool prune(scorer_t scorer);
+        bool update_snippets(const State& state, scorer_t scorer,
+                const words_to_counts::map_t& line_windows);
+
+        bool prune(const State& state, scorer_t scorer);
 
     private:
-        state_t state;
+        typedef std::unordered_map<words_t, snippets_ptr_t> words_to_snippets_t;
+        words_to_snippets_t prevs;/* suffix words -> snippet containing previous word */
+        words_to_snippets_t nexts;/* prefix words -> snippet containing next word */
 
-        typedef std::unordered_map<word_t, links_t> word_to_links_t;
-        word_to_links_t prevs, nexts;/* prev OR next -> links */
-
-        template <typename T>
-        struct pair_hash {
-        public:
-            inline size_t operator()(const std::pair<T,T>& p) const {
-                return hash(p.first) ^ hash(p.second);
-            }
-        private:
-            const std::hash<T> hash;
-        };
-        typedef std::unordered_map<std::pair<word_t, word_t>,
-            link_t, pair_hash<word_t> > words_to_link_t;
-        words_to_link_t words;/* prev AND next -> link */
-        words_to_link_t::const_iterator words_iter;/* shortcut for get_random */
+        typedef std::unordered_map<words_t, snippet_t> window_to_snippet_t;
+        window_to_snippet_t snippets;/* window -> snippet */
+        window_to_snippet_t::const_iterator random_snippet;
     };
 }
 

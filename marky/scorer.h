@@ -3,7 +3,7 @@
 
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2014  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -21,23 +21,23 @@
 
 #include <functional>
 
-#include "link.h"
+#include "snippet.h"
 
 namespace marky {
     namespace scorers {
-        /* No adjustment; scores just increment sequentially as links are encountered. */
+        /* No adjustment; scores just increment sequentially as words are encountered. */
         scorer_t no_adj();
 
-        /* Adjusts scores to slowly decrease as other links are encountered.
-         * score_decrement_links is the number of links which equate to a point decrease.
-         * For example, a value of 100 means that a given link loses one point after
-         * 100 other links have appeared.
+        /* Adjusts scores to slowly decrease as other words are encountered.
+         * score_decrement_words is the number of words which equate to a point decrease.
+         * For example, a value of 100 means that a given snippet loses one point after
+         * 100 other words have appeared.
          * If decrement is 0, the resulting scorer will be equivalent to no_adj(). */
-        scorer_t link_adj(size_t score_decrement_links);
+        scorer_t word_adj(size_t score_decrement_words);
 
         /* Adjusts scores to slowly decrease as time passes.
          * score_decrement_seconds is the number of seconds which equate to a point decrease.
-         * For example, a value of 100 means that a given link loses one point after
+         * For example, a value of 100 means that a given snippet loses one point after
          * 100 seconds have transpired.
          * If decrement is 0, the resulting scorer will be equivalent to no_adj(). */
         scorer_t time_adj(size_t score_decrement_seconds);

@@ -1,6 +1,6 @@
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011-2012  Nicholas Parker
+  Copyright (C) 2011-2014  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,182 +18,332 @@
 
 #include <gtest/gtest.h>
 #include <marky/backend-map.h>
+#include <marky/config.h>
 
 using namespace marky;
 
-#define INIT_STATE(backend, scorer)                            \
-    ASSERT_TRUE(backend.increment_link(scorer, "a", "b"));    \
-    ASSERT_TRUE(backend.increment_link(scorer, "a", "b"));    \
-    ASSERT_TRUE(backend.increment_link(scorer, "a", "b"));    \
-    ASSERT_TRUE(backend.increment_link(scorer, "a", "c"));    \
-    ASSERT_TRUE(backend.increment_link(scorer, "b", "c"));    \
-    ASSERT_TRUE(backend.increment_link(scorer, "b", "c"));    \
-    ASSERT_TRUE(backend.increment_link(scorer, "c", "a"));
-
-#define CHECK_LINK(SCORER, STATE, LINK, PREV, NEXT, SCORE)    \
-    ASSERT_TRUE((bool)LINK);                                \
-    EXPECT_EQ(PREV, LINK->prev);                            \
-    EXPECT_EQ(NEXT, LINK->next);                            \
-    EXPECT_EQ(SCORE, LINK->score(SCORER, STATE));
-
-TEST(Map, get_prev) {
-    Backend_Map backend;
-    scorer_t scorer = scorers::no_adj();
-    selector_t selector = selectors::best_always();
-
-    link_t link;
-    EXPECT_TRUE(backend.get_next(selector, scorer, "a", link));
-    EXPECT_FALSE((bool)link);
-    EXPECT_TRUE(backend.get_next(selector, scorer, "b", link));
-    EXPECT_FALSE((bool)link);
-    EXPECT_TRUE(backend.get_next(selector, scorer, "c", link));
-    EXPECT_FALSE((bool)link);
-
-    INIT_STATE(backend, scorer);
-
-    state_t state(new _state_t(0,0));
-
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "a", link));
-    CHECK_LINK(scorer, state, link, "a", "b", 3);
-
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "b", link));
-    CHECK_LINK(scorer, state, link, "b", "c", 2);
-
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "c", link));
-    CHECK_LINK(scorer, state, link, "c", "a", 1);
+static void init_data_1(const State& state, IBackend& backend, const scorer_t& scorer) {
+    marky::words_to_counts counts;
+    counts.increment({"a", "b"});
+    counts.increment({"a", "b"});
+    counts.increment({"a", "b"});
+    counts.increment({"a", "c"});
+    counts.increment({"b", "c"});
+    counts.increment({"b", "c"});
+    counts.increment({"c", "a"});
+    ASSERT_TRUE(backend.update_snippets(state, scorer, counts.map()));
 }
 
-TEST(Map, get_next) {
+static void init_data_2(const State& state, IBackend& backend, const scorer_t& scorer) {
+    marky::words_to_counts counts;
+    counts.increment({"a", "b", "c"});
+    counts.increment({"a", "b", "c"});
+    counts.increment({"a", "b", "c"});
+    counts.increment({"a", "c", "d"});
+    counts.increment({"b", "c", "d"});
+    counts.increment({"b", "c", "d"});
+    counts.increment({"c", "a", "b"});
+    ASSERT_TRUE(backend.update_snippets(state, scorer, counts.map()));
+}
+
+static marky::words_to_counts::map_t to_map(const words_t& words) {
+    marky::words_to_counts::map_t map;
+    map[words] = 1;
+    return map;
+}
+
+#define CHECK_WORD(SCORER, STATE, WORD, PREV, NEXT, SCORE)      \
+    ASSERT_NE((bool)WORD);                                      \
+    EXPECT_EQ(PREV, WORD->prev);                                \
+    EXPECT_EQ(NEXT, WORD->next);                                \
+    EXPECT_EQ(SCORE, WORD->score(SCORER, STATE));
+
+static void test_get_prev(bool insert_2) {
     Backend_Map backend;
     scorer_t scorer = scorers::no_adj();
     selector_t selector = selectors::best_always();
+    State state(0,0);
 
-    link_t link;
-    EXPECT_TRUE(backend.get_next(selector, scorer, "a", link));
-    EXPECT_FALSE((bool)link);
-    EXPECT_TRUE(backend.get_next(selector, scorer, "b", link));
-    EXPECT_FALSE((bool)link);
-    EXPECT_TRUE(backend.get_next(selector, scorer, "c", link));
-    EXPECT_FALSE((bool)link);
+    word_t word;
+    EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"c", "a", "x"}, word));
+    EXPECT_EQ(IBackend::LINE_START, word);
+    EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"c", "a"}, word));
+    EXPECT_EQ(IBackend::LINE_START, word);
+    EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"c"}, word));
+    EXPECT_EQ(IBackend::LINE_START, word);
 
-    INIT_STATE(backend, scorer);
+    EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"a", "b", "x"}, word));
+    EXPECT_EQ(IBackend::LINE_START, word);
+    EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"a", "b"}, word));
+    EXPECT_EQ(IBackend::LINE_START, word);
+    EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"a"}, word));
+    EXPECT_EQ(IBackend::LINE_START, word);
 
-    state_t state(new _state_t(0,0));
+    EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"b", "c", "x"}, word));
+    EXPECT_EQ(IBackend::LINE_START, word);
+    EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"b", "c"}, word));
+    EXPECT_EQ(IBackend::LINE_START, word);
+    EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"b"}, word));
+    EXPECT_EQ(IBackend::LINE_START, word);
 
-    EXPECT_TRUE(backend.get_next(selector, scorer, "a", link));
-    CHECK_LINK(scorer, state, link, "c", "a", 1);
+    if (insert_2) {
+        init_data_2(state, backend, scorer);
 
-    EXPECT_TRUE(backend.get_next(selector, scorer, "b", link));
-    CHECK_LINK(scorer, state, link, "a", "b", 3);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"g"}, word));
+        EXPECT_EQ(IBackend::LINE_START, word);
 
-    EXPECT_TRUE(backend.get_next(selector, scorer, "c", link));
-    CHECK_LINK(scorer, state, link, "b", "c", 2);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"c", "a", "x"}, word));
+        EXPECT_EQ(IBackend::LINE_START, word);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"c", "a"}, word));
+        EXPECT_EQ(IBackend::LINE_START, word);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"c"}, word));
+        EXPECT_EQ(IBackend::LINE_START, word);
+
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"a", "b", "x"}, word));
+        EXPECT_EQ("c", word);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"a", "b"}, word));
+        EXPECT_EQ("c", word);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"a"}, word));
+        EXPECT_EQ(IBackend::LINE_START, word);
+
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"b", "c", "x"}, word));
+        EXPECT_EQ("a", word);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"b", "c"}, word));
+        EXPECT_EQ("a", word);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"b"}, word));
+        EXPECT_EQ(IBackend::LINE_START, word);
+    } else {
+        init_data_1(state, backend, scorer);
+
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"g"}, word));
+        EXPECT_EQ(IBackend::LINE_START, word);
+
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"c", "a", "x"}, word));
+        EXPECT_EQ("b", word);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"c", "a"}, word));
+        EXPECT_EQ("b", word);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"c"}, word));
+        EXPECT_EQ("b", word);
+
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"a", "b", "x"}, word));
+        EXPECT_EQ("c", word);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"a", "b"}, word));
+        EXPECT_EQ("c", word);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"a"}, word));
+        EXPECT_EQ("c", word);
+
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"b", "c", "x"}, word));
+        EXPECT_EQ("a", word);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"b", "c"}, word));
+        EXPECT_EQ("a", word);
+        EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"b"}, word));
+        EXPECT_EQ("a", word);
+    }
+}
+
+TEST(Map, get_prev_1) {
+    test_get_prev(false);
+}
+TEST(Map, get_prev_2) {
+    test_get_prev(true);
+}
+
+static void test_get_next(bool insert_2) {
+    Backend_Map backend;
+    scorer_t scorer = scorers::no_adj();
+    selector_t selector = selectors::best_always();
+    State state(0,0);
+
+    word_t word;
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"x", "c", "a"}, word));
+    EXPECT_EQ(IBackend::LINE_END, word);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"c", "a"}, word));
+    EXPECT_EQ(IBackend::LINE_END, word);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a"}, word));
+    EXPECT_EQ(IBackend::LINE_END, word);
+
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"x", "a", "b"}, word));
+    EXPECT_EQ(IBackend::LINE_END, word);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a", "b"}, word));
+    EXPECT_EQ(IBackend::LINE_END, word);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"b"}, word));
+    EXPECT_EQ(IBackend::LINE_END, word);
+
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"x", "b", "c"}, word));
+    EXPECT_EQ(IBackend::LINE_END, word);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"b", "c"}, word));
+    EXPECT_EQ(IBackend::LINE_END, word);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"c"}, word));
+    EXPECT_EQ(IBackend::LINE_END, word);
+
+    if (insert_2) {
+        init_data_2(state, backend, scorer);
+
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"g"}, word));
+        EXPECT_EQ(IBackend::LINE_END, word);
+
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"x", "c", "a"}, word));
+        EXPECT_EQ("b", word);
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"c", "a"}, word));
+        EXPECT_EQ("b", word);
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a"}, word));
+        EXPECT_EQ(IBackend::LINE_END, word); /* no sub-entries are entered by the backend */
+
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"x", "a", "b"}, word));
+        EXPECT_EQ("c", word);
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a", "b"}, word));
+        EXPECT_EQ("c", word);
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"b"}, word));
+        EXPECT_EQ(IBackend::LINE_END, word);
+
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"x", "b", "c"}, word));
+        EXPECT_EQ("d", word);
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"b", "c"}, word));
+        EXPECT_EQ("d", word);
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"c"}, word));
+        EXPECT_EQ(IBackend::LINE_END, word);
+    } else {
+        init_data_1(state, backend, scorer);
+
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"g"}, word));
+        EXPECT_EQ(IBackend::LINE_END, word);
+
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"x", "c", "a"}, word));
+        EXPECT_EQ("b", word);
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"c", "a"}, word));
+        EXPECT_EQ("b", word);
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a"}, word));
+        EXPECT_EQ("b", word);
+
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"x", "a", "b"}, word));
+        EXPECT_EQ("c", word);
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a", "b"}, word));
+        EXPECT_EQ("c", word);
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"b"}, word));
+        EXPECT_EQ("c", word);
+
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"x", "b", "c"}, word));
+        EXPECT_EQ("a", word);
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"b", "c"}, word));
+        EXPECT_EQ("a", word);
+        EXPECT_TRUE(backend.get_next(state, selector, scorer, {"c"}, word));
+        EXPECT_EQ("a", word);
+    }
+}
+
+TEST(Map, get_next_1) {
+    test_get_next(false);
+}
+TEST(Map, get_next_2) {
+    test_get_next(true);
 }
 
 TEST(Map, get_random) {
     Backend_Map backend;
+    /* each word loses a point if it's not updated within 2 increments */
+    scorer_t scorer = scorers::word_adj(2);
+    State state(0,0);
 
-    link_t rand;
-    EXPECT_TRUE(backend.get_random(rand));
-    EXPECT_FALSE((bool)rand);
+    word_t rand;
+    EXPECT_TRUE(backend.get_random(state, scorer, rand));
+    EXPECT_EQ(IBackend::LINE_END, rand);
 
-    /* each link loses a point if it's not updated within 2 increments */
-    scorer_t scorer = scorers::link_adj(2);
+    /* add one word, make sure we don't get back a blank */
+    ASSERT_TRUE(backend.update_snippets(state, scorer, to_map({"a"})));
 
-    /* add two links, assume we'll be getting back one of them */
-    ASSERT_TRUE(backend.increment_link(scorer, "a", "b"));
-    ASSERT_TRUE(backend.increment_link(scorer, "c", "d"));
-    state_t state(new _state_t(2,2));
+    EXPECT_TRUE(backend.get_random(state, scorer, rand));
+    EXPECT_NE(IBackend::LINE_END, rand);
 
-    EXPECT_TRUE(backend.get_random(rand));
-    ASSERT_TRUE((bool)rand);
-    if (rand->prev == "a") {
-        EXPECT_EQ("b", rand->next);
-        EXPECT_EQ(0, rand->score(scorer, state));
-    } else {
-        EXPECT_EQ("c", rand->prev);
-        EXPECT_EQ("d", rand->next);
-        EXPECT_EQ(1, rand->score(scorer, state));
-    }
+    /* add two words, assume we'll be getting back one of them */
+    marky::words_to_counts::map_t map;
+    map[{"a", "b"}] = 1;
+    map[{"c", "d"}] = 1;
+    ASSERT_TRUE(backend.update_snippets(state, scorer, map));
+
+    EXPECT_TRUE(backend.get_random(state, scorer, rand));
+    EXPECT_NE(IBackend::LINE_END, rand);
 }
 
-#define INC_STATE(STATE) ++state->time; ++state->link;
+#define INC_STATE(state) DEBUG("INC %lu", state.count); ++state.time; ++state.count;
 
 TEST(Map, scoreadj_prune) {
     Backend_Map backend;
-    /* each link loses a point if it's not updated within 2 increments */
-    scorer_t scorer = scorers::link_adj(2);
+    /* each word loses a point if it's not updated within 2 increments */
+    scorer_t scorer = scorers::word_adj(2);
 
-    backend.increment_link(scorer, "a", "b");
-    backend.increment_link(scorer, "a", "b");
-    backend.increment_link(scorer, "a", "b");
-    state_t state(new _state_t(3,3));
+    State state(0,0);
+    backend.update_snippets(state, scorer, to_map({"a", "b"}));
+    INC_STATE(state);//0
+    backend.update_snippets(state, scorer, to_map({"a", "b"}));
+    INC_STATE(state);//1
+    backend.update_snippets(state, scorer, to_map({"a", "b"}));
+    INC_STATE(state);//2
 
     selector_t selector = selectors::best_always();
-    link_t link;
+    word_t word;
 
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "a", link));
-    CHECK_LINK(scorer, state, link, "a", "b", 3);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a"}, word));//score=3
+    EXPECT_EQ("b", word);
 
-    backend.increment_link(scorer, "c", "d");
-    INC_STATE(state)/* keep our state in sync with backend's state */
+    backend.update_snippets(state, scorer, to_map({"c", "d"}));
+    INC_STATE(state);//3
 
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "a", link));
-    CHECK_LINK(scorer, state, link, "a", "b", 2);
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "c", link));
-    CHECK_LINK(scorer, state, link, "c", "d", 1);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a"}, word));//score=2
+    EXPECT_EQ("b", word);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"c"}, word));//score=1
+    EXPECT_EQ("d", word);
 
-    backend.increment_link(scorer, "c", "d");
-    INC_STATE(state)
+    backend.update_snippets(state, scorer, to_map({"c", "d"}));
+    INC_STATE(state);//4
 
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "a", link));
-    CHECK_LINK(scorer, state, link, "a", "b", 2);
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "c", link));
-    CHECK_LINK(scorer, state, link, "c", "d", 2);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a"}, word));//score=2
+    EXPECT_EQ("b", word);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"c"}, word));//score=2
+    EXPECT_EQ("d", word);
 
-    backend.increment_link(scorer, "c", "d");
-    INC_STATE(state)
+    backend.update_snippets(state, scorer, to_map({"c", "d"}));
+    INC_STATE(state);//5
 
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "a", link));
-    CHECK_LINK(scorer, state, link, "a", "b", 1);
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "c", link));
-    CHECK_LINK(scorer, state, link, "c", "d", 3);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a"}, word));//score=1
+    EXPECT_EQ("b", word);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"c"}, word));//score=3
+    EXPECT_EQ("d", word);
 
-    backend.increment_link(scorer, "c", "d");
-    INC_STATE(state)
+    backend.update_snippets(state, scorer, to_map({"c", "d"}));
+    INC_STATE(state);//6
 
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "a", link));
-    CHECK_LINK(scorer, state, link, "a", "b", 1);
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "c", link));
-    CHECK_LINK(scorer, state, link, "c", "d", 4);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a"}, word));//score=1
+    EXPECT_EQ("b", word);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"c"}, word));//score=4
+    EXPECT_EQ("d", word);
 
-    backend.prune(scorer);/* deletes nothing */
+    backend.prune(state, scorer);/* deletes nothing */
 
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "a", link));
-    CHECK_LINK(scorer, state, link, "a", "b", 1);
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "c", link));
-    CHECK_LINK(scorer, state, link, "c", "d", 4);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a"}, word));//score=1
+    EXPECT_EQ("b", word);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"c"}, word));//score=4
+    EXPECT_EQ("d", word);
 
-    backend.increment_link(scorer, "c", "d");
-    INC_STATE(state)
+    backend.update_snippets(state, scorer, to_map({"c", "d"}));
+    INC_STATE(state);//7
 
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "a", link));
-    CHECK_LINK(scorer, state, link, "a", "b", 0);
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "c", link));
-    CHECK_LINK(scorer, state, link, "c", "d", 5);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a"}, word));//score=0
+    EXPECT_EQ("b", word);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"c"}, word));//score=5
+    EXPECT_EQ("d", word);
 
-    backend.prune(scorer);/* deletes a-b */
+    backend.prune(state, scorer);/* deletes a-b */
 
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "a", link));
-    EXPECT_FALSE((bool)link);
-    EXPECT_TRUE(backend.get_next(selector, scorer, "b", link));
-    EXPECT_FALSE((bool)link);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"a"}, word));//notfound
+    EXPECT_EQ(IBackend::LINE_END, word);
+    EXPECT_TRUE(backend.get_prev(state, selector, scorer, {"b"}, word));//notfound
+    EXPECT_EQ(IBackend::LINE_START, word);
 
-    EXPECT_TRUE(backend.get_prev(selector, scorer, "c", link));
-    CHECK_LINK(scorer, state, link, "c", "d", 5);
+    EXPECT_TRUE(backend.get_next(state, selector, scorer, {"c"}, word));//score=5
+    EXPECT_EQ("d", word);
 
-    EXPECT_TRUE(backend.get_random(link));
-    CHECK_LINK(scorer, state, link, "c", "d", 5);
+    EXPECT_TRUE(backend.get_random(state, scorer, word));
+    EXPECT_NE(IBackend::LINE_END, word);
 }
 
 int main(int argc, char **argv) {

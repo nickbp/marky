@@ -3,7 +3,7 @@
 
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011-2012  Nicholas Parker
+  Copyright (C) 2011-2014  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -23,20 +23,21 @@
 #include "selector.h"
 
 namespace marky {
-    typedef std::list<word_t> line_t;
-
     /* Marky is a simple but fairly modular library for creating markov chains
      * from arbitrary text. There are likely better libraries available; this is
      * just a toy project. */
     class Marky {
     public:
-        /* Sets up a Marky instance using the specified components. The backend
-         * MUST have already been successfully init()ed before being passed. */
-        Marky(backend_t backend, selector_t selector, scorer_t scorer);
+        /* Sets up a Marky instance using the specified components and look
+         * size. The choice of components will determine how Marky scores and
+         * stores any input. */
+        Marky(backend_t backend, selector_t selector, scorer_t scorer,
+                size_t look_size);
+        virtual ~Marky();
 
         /* Adds the line (and its inter-word links) to the dataset.
          * Returns false in the event of some error. */
-        bool insert(const line_t& line);
+        bool insert(const words_t& line);
 
         /* Produces a line from the search word, or from a random word if the
          * search word is unspecified. 'length_limit_words' and
@@ -44,17 +45,24 @@ namespace marky {
          * length of the result, or no limit if zero.
          * Produces an empty line if the search word wasn't found. Returns false
          * in the event of some other error. */
-        bool produce(line_t& line, const word_t& search = word_t(),
+        bool produce(words_t& line, const words_t& search = words_t(),
                 size_t length_limit_words = 0, size_t length_limit_chars = 0);
+
+        /* Tells the underlying backend to clean up any stale links it may have
+         * lying around. This may be called periodically to free up resources. */
+        bool prune_backend();
 
     private:
         /* Grows a line in both directions until length has been reached. */
-        bool grow(line_t& line,
+        bool grow(words_t& line,
                 size_t length_limit_words = 0, size_t length_limit_chars = 0);
 
         const backend_t backend;
         const selector_t selector;
         const scorer_t scorer;
+        const size_t look_size;
+
+        State state;
     };
 }
 

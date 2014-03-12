@@ -1,6 +1,6 @@
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2014  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -23,8 +23,8 @@
 
 using namespace marky;
 
-#define INIT_STATE(LAST_STATE, THIS_STATE, seconds, links)    \
-    _state_t LAST_STATE(0, 0), THIS_STATE(seconds, links);
+#define INIT_STATE(LAST_STATE, THIS_STATE, seconds, count)    \
+    State LAST_STATE(0, 0), THIS_STATE(seconds, count);
 
 // -- NO ADJ
 
@@ -37,11 +37,11 @@ TEST(NoAdj, no_adj) {
     EXPECT_EQ(324, scorer(324, last_state, this_state));
 }
 
-// -- LINK ADJ
+// -- WORD ADJ
 
-TEST(LinkAdj, link_adj_zero) {
+TEST(WordAdj, word_adj_zero) {
     /* should be same as no_adj */
-    scorer_t scorer = scorers::link_adj(0);
+    scorer_t scorer = scorers::word_adj(0);
     INIT_STATE(last_state, this_state, 20, 20);
 
     EXPECT_EQ(0, scorer(0, last_state, this_state));
@@ -49,8 +49,8 @@ TEST(LinkAdj, link_adj_zero) {
     EXPECT_EQ(324, scorer(324, last_state, this_state));
 }
 
-TEST(LinkAdj, link_adj_one) {
-    scorer_t scorer = scorers::link_adj(1);
+TEST(WordAdj, word_adj_one) {
+    scorer_t scorer = scorers::word_adj(1);
     INIT_STATE(last_state, this_state, 20, 20);
 
     EXPECT_EQ(0, scorer(0, last_state, this_state));
@@ -58,8 +58,8 @@ TEST(LinkAdj, link_adj_one) {
     EXPECT_EQ(324-20, scorer(324, last_state, this_state));
 }
 
-TEST(LinkAdj, link_adj_five) {
-    scorer_t scorer = scorers::link_adj(5);
+TEST(WordAdj, word_adj_five) {
+    scorer_t scorer = scorers::word_adj(5);
     INIT_STATE(last_state, this_state, 20, 20);
 
     EXPECT_EQ(0, scorer(0, last_state, this_state));
@@ -67,8 +67,8 @@ TEST(LinkAdj, link_adj_five) {
     EXPECT_EQ(floor(324-(20/5.)), scorer(324, last_state, this_state));
 }
 
-TEST(LinkAdj, link_adj_seven) {
-    scorer_t scorer = scorers::link_adj(7);
+TEST(WordAdj, word_adj_seven) {
+    scorer_t scorer = scorers::word_adj(7);
 
     /* check that score is decremented only when 7 is reached */
 

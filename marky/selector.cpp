@@ -1,6 +1,6 @@
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011-2012  Nicholas Parker
+  Copyright (C) 2011-2014  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -22,17 +22,17 @@
 using namespace std::placeholders;
 
 namespace marky {
-    link_t select_best(const links_t& links, const scorer_t& scorer,
-            const state_t& state) {
+    snippet_t select_best(const snippet_ptr_set_t& snippets, const scorer_t& scorer,
+            const State& state) {
         /* shortcuts: */
-        if (links->empty()) { return link_t(); }
-        if (links->size() == 1) { return links->front(); }
+        if (snippets.empty()) { return snippet_t(); }
+        if (snippets.size() == 1) { return *snippets.begin(); }
 
-        _links_t::const_iterator best_iter = links->begin();
+        snippet_ptr_set_t::const_iterator best_iter = snippets.begin();
         score_t best_score = (*best_iter)->score(scorer, state);
 
-        const _links_t::const_iterator& end = links->end();
-        for (_links_t::const_iterator iter = ++links->begin();
+        const snippet_ptr_set_t::const_iterator& end = snippets.end();
+        for (snippet_ptr_set_t::const_iterator iter = ++snippets.begin();
              iter != end; ++iter) {
             score_t score = (*iter)->score(scorer, state);
             if (score > best_score) {
@@ -44,15 +44,15 @@ namespace marky {
         return *best_iter;
     }
 
-    link_t select_random(const links_t& links) {
+    snippet_t select_random(const snippet_ptr_set_t& snippets) {
         /* shortcuts: save us a rand() call: */
-        if (links->empty()) { return link_t(); }
-        if (links->size() == 1) { return links->front(); }
+        if (snippets.empty()) { return snippet_t(); }
+        if (snippets.size() == 1) { return *snippets.begin(); }
 
-        size_t select = pick_rand(links->size());
+        size_t select = pick_rand(snippets.size());
 
         /* get the nth element from the std::list */
-        _links_t::const_iterator iter = links->begin();
+        snippet_ptr_set_t::const_iterator iter = snippets.begin();
         while (select != 0) {
             ++iter;
             --select;
@@ -60,16 +60,17 @@ namespace marky {
         return *iter;
     }
 
-    link_t select_weighted(const links_t& links, const scorer_t& scorer,
-            const state_t& state, int8_t /*weight_factor*/) {//TODO
+    snippet_t select_weighted(const snippet_ptr_set_t& snippets,
+            const scorer_t& scorer, const State& state,
+            int8_t /*weight_factor*/) {//TODO
         /* shortcuts: save us a rand() call: */
-        if (links->empty()) { return link_t(); }
-        if (links->size() == 1) { return links->front(); }
+        if (snippets.empty()) { return snippet_t(); }
+        if (snippets.size() == 1) { return *snippets.begin(); }
 
         /* first pass: get sum score from which to derive 'select' */
         score_t sum_score = 0;
-        const _links_t::const_iterator& end = links->end();
-        for (_links_t::const_iterator iter = links->begin();
+        const snippet_ptr_set_t::const_iterator& end = snippets.end();
+        for (snippet_ptr_set_t::const_iterator iter = snippets.begin();
              iter != end; ++iter) {
             sum_score += (*iter)->score(scorer, state);
         }
@@ -77,7 +78,7 @@ namespace marky {
         score_t select = pick_rand(sum_score);
 
         /* second pass: subtract scores from select, return when select hits 0 */
-        for (_links_t::const_iterator iter = links->begin();
+        for (snippet_ptr_set_t::const_iterator iter = snippets.begin();
              iter != end; ++iter) {
             score_t s = (*iter)->score(scorer, state);
             if (select < s) {
@@ -85,7 +86,7 @@ namespace marky {
             }
             select -= s;
         }
-        return link_t();
+        return snippet_t();
     }
 }
 

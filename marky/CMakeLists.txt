@@ -7,12 +7,14 @@ include_directories(
 )
 
 set(marky_srcs
+    backend.cpp
     backend-map.cpp
     config.cpp
     marky.cpp
     rand-util.cpp
     scorer.cpp
     selector.cpp
+    snippet.cpp
 )
 set(marky_libs
 )
@@ -24,6 +26,7 @@ if(BUILD_BACKEND_SQLITE)
     list(APPEND marky_srcs
         backend-cache.cpp
         backend-sqlite.cpp
+        string-pack.cpp
     )
     list(APPEND marky_libs
         ${sqlite_LIBRARY}

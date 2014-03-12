@@ -12,9 +12,9 @@ set(gtest_libs ${gtest_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
 #unit tests
 
-add_executable(test-link test-link.cpp)
-target_link_libraries(test-link marky ${gtest_libs})
-add_test(test-link test-link)
+add_executable(test-snippet test-snippet.cpp)
+target_link_libraries(test-snippet marky ${gtest_libs})
+add_test(test-snippet test-snippet)
 
 add_executable(test-scorer test-scorer.cpp)
 target_link_libraries(test-scorer marky ${gtest_libs})
@@ -29,6 +29,10 @@ target_link_libraries(test-backend-map marky ${gtest_libs})
 add_test(test-backend-map test-backend-map)
 
 if(BUILD_BACKEND_SQLITE)
+    add_executable(test-string-pack test-string-pack.cpp)
+    target_link_libraries(test-string-pack marky ${gtest_libs})
+    add_test(test-string-pack test-string-pack)
+
     add_executable(test-backend-sqlite test-backend-sqlite.cpp)
     target_link_libraries(test-backend-sqlite marky ${gtest_libs})
     add_test(test-backend-sqlite test-backend-sqlite)

@@ -3,7 +3,7 @@
 
 /*
   marky - A Markov chain generator.
-  Copyright (C) 2011  Nicholas Parker
+  Copyright (C) 2011-2014  Nicholas Parker
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -21,32 +21,32 @@
 
 #include <functional>
 
-#include "link.h"
+#include "snippet.h"
 #include "scorer.h"
 
 namespace marky {
-    /* Given a list of links, a scorer for those links, and the current
-     * state of the backend, selects a link from the list and returns it,
-     * or returns an empty pointer if no link could be selected, such as
+    /* Given a list of snippets, a scorer for those snippets, and the current
+     * state of the backend, selects a snippet from the list and returns it,
+     * or returns an empty pointer if no snippet could be selected, such as
      * due to an empty list. */
-    typedef std::function<link_t
-        (const links_t& links, const scorer_t& scorer, const state_t& cur_state)> selector_t;
+    typedef std::function<snippet_t (const snippet_ptr_set_t& snippets,
+            const scorer_t& scorer, const State& cur_state)> selector_t;
 
     namespace selectors {
-        /* Always returns the best link by score.
+        /* Always returns the best snippet by score.
          * Equivalent to best_weighted with a very high weight_factor. */
         selector_t best_always();
 
-        /* Returns a random link, regardless of score.
+        /* Returns a random snippet, regardless of score.
          * Equivalent to best_weighted with a very low weight_factor. */
         selector_t random();
 
-        /* Randomly selects a link, weighted by score.
+        /* Randomly selects a snippet, weighted by score.
          * 'weight_factor' modifies how the weighing is exaggerated.
          * factor > 128:
-         *   More weight to higher-scoring links (less random), 255 = best_always()
+         *   More weight to higher-scoring snippets (less random), 255 = best_always()
          * factor < 128:
-         *   More weight to lesser-scoring links (more random), 0 = random() */
+         *   More weight to lesser-scoring snippets (more random), 0 = random() */
         selector_t best_weighted(uint8_t weight_factor = 128);
     }
 }
