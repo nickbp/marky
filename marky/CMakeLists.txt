@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 2.6)
 project(marky)
 
 include_directories(
-    ${PROJECT_BINARY_DIR} #for generated config.h
+    ${PROJECT_BINARY_DIR} #for generated build-config.h
 )
 
 set(marky_srcs
@@ -11,6 +11,7 @@ set(marky_srcs
     backend-map.cpp
     config.cpp
     marky.cpp
+    markyc.cpp
     rand-util.cpp
     scorer.cpp
     selector.cpp
@@ -34,9 +35,9 @@ if(BUILD_BACKEND_SQLITE)
 endif()
 
 configure_file (
-    "${PROJECT_SOURCE_DIR}/config.in.h"
-    "${PROJECT_BINARY_DIR}/config.h"
+    "${PROJECT_SOURCE_DIR}/build-config.in.h"
+    "${PROJECT_BINARY_DIR}/build-config.h"
 )
 
-add_library(marky ${marky_srcs})
+add_library(marky SHARED ${marky_srcs})
 target_link_libraries(marky ${marky_libs})

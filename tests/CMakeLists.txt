@@ -10,7 +10,11 @@ include_directories(
 find_package(Threads)
 set(gtest_libs ${gtest_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
-#unit tests
+# unit tests
+
+add_executable(test-marky test-marky.cpp)
+target_link_libraries(test-marky marky ${gtest_libs})
+add_test(test-marky test-marky)
 
 add_executable(test-snippet test-snippet.cpp)
 target_link_libraries(test-snippet marky ${gtest_libs})

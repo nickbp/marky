@@ -38,25 +38,12 @@
 /* Skips "ERR" and func name in output. Used by help output. */
 #define PRINT_HELP(...) config::_error(NULL, __VA_ARGS__)
 
-#cmakedefine BUILD_BACKEND_SQLITE
-
 namespace config {
-    static const int
-        VERSION_MAJOR = @marky_VERSION_MAJOR@,
-        VERSION_MINOR = @marky_VERSION_MINOR@,
-        VERSION_PATCH = @marky_VERSION_PATCH@;
+    extern char VERSION_STRING[];
+    const char BUILD_DATE[] = __TIMESTAMP__;
 
-    static const char VERSION_STRING[] = "@marky_VERSION_MAJOR@.@marky_VERSION_MINOR@.@marky_VERSION_PATCH@"
-#ifdef BUILD_BACKEND_SQLITE
-        "-sqlite"
-#else
-        "-nodb"
-#endif
-        ;
-    static const char BUILD_DATE[] = __TIMESTAMP__;
-
-    extern FILE *fout;
-    extern FILE *ferr;
+    extern FILE* fout;
+    extern FILE* ferr;
 
     /* DONT USE THESE DIRECTLY, use DEBUG()/LOG()/ERROR() instead.
      * The ones with a 'format' function support printf-style format before a list of args.

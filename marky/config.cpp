@@ -19,8 +19,17 @@
 #include <stdarg.h>
 
 #include "config.h"
+#include "build-config.h"
 
 namespace config {
+    char VERSION_STRING[] = MARKY_VERSION_MAJOR "." MARKY_VERSION_MINOR "." MARKY_VERSION_PATCH
+#ifdef BUILD_BACKEND_SQLITE
+        "-sqlite"
+#else
+        "-nodb"
+#endif
+        ;
+
     FILE *fout = stdout, *ferr = stderr;
 
 #ifdef DEBUG_ENABLED
