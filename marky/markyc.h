@@ -1,5 +1,5 @@
-#ifndef MARKY_MARKY_C_H
-#define MARKY_MARKY_C_H
+#ifndef MARKY_MARKYC_H
+#define MARKY_MARKYC_H
 
 /*
   marky - A Markov chain generator.
