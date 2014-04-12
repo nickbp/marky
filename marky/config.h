@@ -42,6 +42,9 @@ namespace config {
     extern char VERSION_STRING[];
     const char BUILD_DATE[] = __TIMESTAMP__;
 
+    /* Returns whether SQLite was enabled in this build. */
+    bool has_sqlite();
+
     extern FILE* fout;
     extern FILE* ferr;
 

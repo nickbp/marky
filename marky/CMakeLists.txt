@@ -8,6 +8,7 @@ include_directories(
 
 set(marky_srcs
     backend.cpp
+    backend-cache.cpp
     backend-map.cpp
     config.cpp
     marky.cpp
@@ -16,6 +17,7 @@ set(marky_srcs
     scorer.cpp
     selector.cpp
     snippet.cpp
+    string-pack.cpp
 )
 set(marky_libs
 )
@@ -25,9 +27,7 @@ if(BUILD_BACKEND_SQLITE)
         ${sqlite_INCLUDE_DIR}
     )
     list(APPEND marky_srcs
-        backend-cache.cpp
         backend-sqlite.cpp
-        string-pack.cpp
     )
     list(APPEND marky_libs
         ${sqlite_LIBRARY}

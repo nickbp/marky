@@ -76,6 +76,13 @@ TEST(MarkyC, basic_insert_get) {
     marky_backend_free(backend);
     marky_scorer_free(scorer);
     marky_selector_free(selector);
+    backend = NULL;
+    scorer = NULL;
+    selector = NULL;
+    /* and this... */
+    marky_backend_free(backend);
+    marky_scorer_free(scorer);
+    marky_selector_free(selector);
 
     {
         marky_words_t* line_in = marky_words_new(3);
@@ -133,6 +140,8 @@ TEST(MarkyC, basic_insert_get) {
 
     EXPECT_EQ(MARKY_SUCCESS, marky_prune_backend(marky));
 
+    marky_free(marky);
+    marky = NULL;
     marky_free(marky);
 }
 

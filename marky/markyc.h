@@ -21,7 +21,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-//#include "build-config.h"
 
 #define MARKY_SUCCESS 0
 #define MARKY_FAILURE 1
@@ -86,14 +85,18 @@ extern "C" {
      * If the returned instance is non-NULL, it must later be freed with
      * marky_backend_free(). See backend-*.h for more info about Backend types. */
     marky_Backend* marky_backend_new_map(void);
-#ifdef BUILD_BACKEND_SQLITE
+    marky_Backend* marky_backend_new_cache(marky_Backend_Cacheable* backend);
+
+    /* If SQLite was disabled in the build, these calls will always return NULL.
+     * Use marky_has_sqlite() to check if SQLite is available. */
     marky_Backend* marky_backend_new_sqlite_direct(char* db_file_path);
     marky_Backend_Cacheable* marky_backend_new_sqlite_cacheable(char* db_file_path);
-    marky_Backend* marky_backend_cache(marky_Backend_Cacheable* backend);
-#endif
+    /* Returns MARKY_SUCCESS if SQLite is available, or MARKY_FAILURE if it isn't. */
+    int marky_has_sqlite(void);
 
     /* Deletes the provided Backend instance. Passing NULL is a (safe) no-op. */
     void marky_backend_free(marky_Backend* backend);
+    void marky_backend_cacheable_free(marky_Backend_Cacheable* backend);
 
     /* --- */
 

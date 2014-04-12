@@ -30,6 +30,16 @@ namespace config {
 #endif
         ;
 
+    bool has_sqlite() {
+        return
+#ifdef BUILD_BACKEND_SQLITE
+            true
+#else
+            false
+#endif
+            ;
+    }
+
     FILE *fout = stdout, *ferr = stderr;
 
 #ifdef DEBUG_ENABLED

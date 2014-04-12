@@ -20,10 +20,12 @@
 #include <string.h>
 
 #include "markyc.h"
+#include "build-config.h"
+#include "config.h"
 
 #include "backend-map.h"
-#ifdef BUILD_BACKEND_SQLITE
 #include "backend-cache.h"
+#ifdef BUILD_BACKEND_SQLITE
 #include "backend-sqlite.h"
 #endif
 #include "selector.h"
@@ -156,22 +158,34 @@ marky_Backend* marky_backend_new_map(void) {
     marky::backend_t backend(new marky::Backend_Map());
     return check_ptr<marky::IBackend, marky_Backend>(backend);
 }
-#ifdef BUILD_BACKEND_SQLITE
-marky_Backend* marky_backend_new_sqlite_direct(char* db_file_path) {
-    assert(db_file_path != NULL);
-    return check_ptr<marky::IBackend, marky_Backend>(marky::Backend_SQLite::create_backend(db_file_path));
-}
-marky_Backend_Cacheable* marky_backend_new_sqlite_cacheable(char* db_file_path) {
-    assert(db_file_path != NULL);
-    return check_ptr<marky::ICacheable, marky_Backend_Cacheable>(marky::Backend_SQLite::create_cacheable(db_file_path));
-}
-marky_Backend* marky_backend_cache(marky_Backend_Cacheable* backend) {
+marky_Backend* marky_backend_new_cache(marky_Backend_Cacheable* backend) {
     assert(backend != NULL);
     return check_ptr<marky::IBackend, marky_Backend>(marky::backend_t(new marky::Backend_Cache(backend->wrapped)));
 }
+marky_Backend* marky_backend_new_sqlite_direct(char* db_file_path) {
+    assert(db_file_path != NULL);
+#ifdef BUILD_BACKEND_SQLITE
+    return check_ptr<marky::IBackend, marky_Backend>(marky::Backend_SQLite::create_backend(db_file_path));
+#else
+    return NULL;
 #endif
+}
+marky_Backend_Cacheable* marky_backend_new_sqlite_cacheable(char* db_file_path) {
+    assert(db_file_path != NULL);
+#ifdef BUILD_BACKEND_SQLITE
+    return check_ptr<marky::ICacheable, marky_Backend_Cacheable>(marky::Backend_SQLite::create_cacheable(db_file_path));
+#else
+    return NULL;
+#endif
+}
+int marky_has_sqlite(void) {
+    return config::has_sqlite();
+}
 
 void marky_backend_free(marky_Backend* backend) {
+    delete backend;
+}
+void marky_backend_cacheable_free(marky_Backend_Cacheable* backend) {
     delete backend;
 }
 
