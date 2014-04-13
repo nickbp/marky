@@ -125,7 +125,11 @@ bool marky::Marky::insert(const words_t& line) {
 }
 
 bool marky::Marky::produce(words_t& line, const words_t& search/*=words_t()*/,
-        size_t length_limit_words/*=0*/, size_t length_limit_chars/*=0*/) {
+        size_t length_limit_words/*=100*/, size_t length_limit_chars/*=1000*/) {
+    if (length_limit_words == 0 && length_limit_chars == 0) {
+        /* one of the two limits MUST be provided, to avoid infinite looping */
+        return false;
+    }
     if (search.empty()) {
         word_t rand_word;
         if (!backend->get_random(state, scorer, rand_word)) {/* backend err */
@@ -153,10 +157,9 @@ bool marky::Marky::prune_backend() {
 }
 
 #define CHECK_LIMIT(size, limit) (limit == 0 || size < limit)
-#define CHECK_CHAR_LIMIT(char_size, limit) (limit == 0 || char_size < limit)
 
 bool marky::Marky::grow(words_t& line,
-        size_t length_limit_words/*=0*/, size_t length_limit_chars/*=0*/) {
+        size_t length_limit_words/*=100*/, size_t length_limit_chars/*=1000*/) {
 #ifdef DEBUG_ENABLED
     DEBUG("line: %s", str(line).c_str());
 #endif

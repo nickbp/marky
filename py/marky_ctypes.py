@@ -18,11 +18,10 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-MARKY_LIB_NAME = "marky"
 # Assume the user has built Marky in ../bin:
-MARKY_LIB_PATH = "../bin/marky/lib" + MARKY_LIB_NAME + ".so"
+MARKY_DEFAULT_LIB_PATH = "../bin/marky/libmarky.so"
 
-import ctypes, ctypes.util
+import ctypes, ctypes.util, os.path
 
 class WORDS_STRUCT(ctypes.Structure):
     _fields_ = [("words", ctypes.POINTER(ctypes.c_char_p)),
@@ -41,13 +40,18 @@ class MARKY_STRUCT(ctypes.Structure):
 class MARKY_INTERFACE:
     def __init__(self, lib_path = None):
         if not lib_path:
-            lib_path = MARKY_LIB_PATH
+            lib_path = MARKY_DEFAULT_LIB_PATH
         try:
             self.i = ctypes.cdll.LoadLibrary(lib_path)
         except OSError: # file not found
-            markyname = ctypes.util.find_library(MARKY_LIB_NAME)
+            lib_filename = os.path.basename(lib_path)
+            lib_basename_ext = os.path.splitext(lib_filename)
+            lib_name = lib_basename_ext[0]
+            if lib_basename_ext[1] == ".so" and lib_name.startswith("lib"):
+                lib_name = lib_name[3:] # strip "lib"
+            markyname = ctypes.util.find_library(lib_name)
             if not markyname:
-                raise Exception("Can't find marky! Tried: path=%s, name=%s" % (MARKY_LIB_PATH, MARKY_LIB_NAME))
+                raise Exception("Can't find marky! Tried: path=%s, name=%s" % (lib_path, lib_name))
             self.i = ctypes.cdll.LoadLibrary(markyname)
 
         self.i.marky_new.restype = ctypes.POINTER(MARKY_STRUCT)

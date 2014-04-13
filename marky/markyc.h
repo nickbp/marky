@@ -33,6 +33,8 @@ extern "C" {
     struct marky_Scorer;
     struct marky_Marky;
 
+    /* -- Words */
+
     /* A list containing n=words_count words. */
     typedef struct marky_words {
         /* An array of C strings, or NULL if none/empty. Each entry is allocated
@@ -41,6 +43,23 @@ extern "C" {
         /* The number of words in 'words', or 0 if none/empty. */
         size_t words_count;
     } marky_words_t;
+
+    /* Returns a new words instance. If any part of the instance creation
+     * fails, returns a NULL pointer.
+     *
+     * The returned instance will have with 'words_count' word entries, which
+     * have all been initialized to NULL. The instance's word entries may then
+     * be populated with malloc()ed C strings.
+     *
+     * If the returned instance is non-NULL, it must later be freed with
+     * marky_words_free(). */
+    marky_words_t* marky_words_new(size_t words_count);
+
+    /* Deletes the provided line and all its entries, if any. Passing NULL is a
+     * (safe) no-op. */
+    void marky_words_free(marky_words_t* line);
+
+    /* -- Marky Frontend */
 
     /* Returns a new Marky instance using the provided non-NULL components.
      * If any part of the instance creation fails, returns a NULL pointer.
@@ -55,29 +74,33 @@ extern "C" {
     /* Deletes the provided Marky instance. Passing NULL is a (safe) no-op. */
     void marky_free(marky_Marky* marky);
 
-    /* Adds the line (and its inter-word links) to the dataset.
+    /* Adds the line (and its inter-word snippets) to the dataset.
      * Returns MARKY_FAILURE in the event of some error. */
     int marky_insert(marky_Marky* marky, const marky_words_t* line);
 
-    /* Produces a malloc()ed list of strings from the search word, or from a
-     * random word if the search word is unspecified. 'length_limit_words' and
-     * 'length_limit_chars' each allow setting APPROXIMATE limits on the length
-     * of the result, or no limit if zero.
+    /* Produces a malloc()ed list of strings from the search word(s), or from a
+     * random word if the search words are unspecified.
      *
-     * Produces a NULL line_out if the search word wasn't found (if applicable).
-     * Returns MARKY_FAILURE in the event of some other error.
+     * 'length_limit_words' and 'length_limit_chars' each allow setting
+     * APPROXIMATE limits on the length of the result. If either limit is set to
+     * zero, that limit is disabled. One of the two limits MUST always be
+     * non-zero, to avoid infinite loops.
+     *
+     * Produces a NULL line_out if the search words (if any) weren't found, or
+     * if no data was available. Returns MARKY_FAILURE in the event of an error.
+     *
      * If MARKY_SUCCESS is returned and a non-NULL line_out is produced,
      * line_out must be freed by calling marky_words_free(). */
     int marky_produce(marky_Marky* marky,
             marky_words_t** line_out, const marky_words_t* search = NULL,
-            size_t length_limit_words = 0, size_t length_limit_chars = 0);
+            size_t length_limit_words = 100, size_t length_limit_chars = 1000);
 
-    /* Tells the underlying backend to clean up any stale links it may have
-     * lying around. This may be called periodically to free up resources.
-     * Returns MARKY_FAILURE in the event of some error. */
+    /* Tells the underlying backend to clean up any stale (score=0) snippets it
+     * may have lying around. This may be called periodically to free up
+     * resources. Returns MARKY_FAILURE in the event of some error. */
     int marky_prune_backend(marky_Marky* marky);
 
-    /* --- */
+    /* -- Backends */
 
     /* Returns a new Backend instance. If any part of the instance creation
      * fails, returns a NULL pointer.
@@ -98,7 +121,7 @@ extern "C" {
     void marky_backend_free(marky_Backend* backend);
     void marky_backend_cacheable_free(marky_Backend_Cacheable* backend);
 
-    /* --- */
+    /* -- Selectors */
 
     /* Returns a new Selector instance. If any part of the instance creation
      * fails, returns a NULL pointer.
@@ -112,7 +135,7 @@ extern "C" {
     /* Deletes the provided Selector instance. Passing NULL is a (safe) no-op. */
     void marky_selector_free(marky_Selector* selector);
 
-    /* --- */
+    /* -- Scorers */
 
     /* Returns a new Scorer instance. If any part of the instance creation
      * fails, returns a NULL pointer.
@@ -125,23 +148,6 @@ extern "C" {
 
     /* Deletes the provided Scorer instance. Passing NULL is a (safe) no-op. */
     void marky_scorer_free(marky_Scorer* scorer);
-
-    /* --- */
-
-    /* Returns a new words instance. If any part of the instance creation
-     * fails, returns a NULL pointer.
-     *
-     * The returned instance will have with 'words_count' word entries, which
-     * have all been initialized to NULL. The instance's word entries may then
-     * be populated with malloc()ed C strings.
-     *
-     * If the returned instance is non-NULL, it must later be freed with
-     * marky_words_free(). */
-    marky_words_t* marky_words_new(size_t words_count);
-
-    /* Deletes the provided line and all its entries, if any. Passing NULL is a
-     * (safe) no-op. */
-    void marky_words_free(marky_words_t* line);
 }
 
 #endif

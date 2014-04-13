@@ -33,15 +33,21 @@ namespace marky {
             const scorer_t& scorer, const State& cur_state)> selector_t;
 
     namespace selectors {
-        /* Always returns the best snippet by score.
+        /* Returns a Selector which always selects the best snippets by score,
+         * with zero randomness (unless two scores are equal).
+         *
          * Equivalent to best_weighted with a very high weight_factor. */
         selector_t best_always();
 
-        /* Returns a random snippet, regardless of score.
+        /* Returns a Selector which always selects snippets randomly, regardless
+         * of score, with extreme randomness.
+         *
          * Equivalent to best_weighted with a very low weight_factor. */
         selector_t random();
 
-        /* Randomly selects a snippet, weighted by score.
+        /* Returns a Selector which selects snippets with a custom degree of
+         * randomness.
+         *
          * 'weight_factor' modifies how the weighing is exaggerated.
          * factor > 128:
          *   More weight to higher-scoring snippets (less random), 255 = best_always()

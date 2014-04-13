@@ -25,21 +25,35 @@
 
 namespace marky {
     namespace scorers {
-        /* No adjustment; scores just increment sequentially as words are encountered. */
+        /* Returns a Scorer which performs no adjustment to scores.
+         * Scores just increment sequentially as words are encountered.
+         *
+         * This is useful when parsing data where all data should be weighted
+         * equally, like the content of a book. */
         scorer_t no_adj();
 
-        /* Adjusts scores to slowly decrease as other words are encountered.
-         * score_decrement_words is the number of words which equate to a point decrease.
-         * For example, a value of 100 means that a given snippet loses one point after
-         * 100 other words have appeared.
-         * If decrement is 0, the resulting scorer will be equivalent to no_adj(). */
+        /* Returns a Scorer which adjusts scores downward to slowly decrease as
+         * additional words are encountered.
+         *
+         * This is useful for parsing log archives or forums, where more recent
+         * data should have higher weighting than less recent data.
+         *
+         * score_decrement_words is the number of words which equate to a point
+         * decrease. For example, a value of 100 means that a given snippet
+         * loses one point after 100 other words have appeared.
+         * If the decrement is 0, the Scorer will be equivalent to no_adj(). */
         scorer_t word_adj(size_t score_decrement_words);
 
-        /* Adjusts scores to slowly decrease as time passes.
-         * score_decrement_seconds is the number of seconds which equate to a point decrease.
-         * For example, a value of 100 means that a given snippet loses one point after
-         * 100 seconds have transpired.
-         * If decrement is 0, the resulting scorer will be equivalent to no_adj(). */
+        /* Returns a Scorer which adjusts scores to slowly decrease as time
+         * passes.
+         *
+         * This is useful for parsing live/ongoing streams of data, where more
+         * recent data should have higher weighting than less recent data.
+         *
+         * score_decrement_seconds is the number of seconds which equate to a
+         * point decrease. For example, a value of 100 means that a given
+         * snippet loses one point after 100 seconds have transpired.
+         * If the decrement is 0, the Scorer will be equivalent to no_adj(). */
         scorer_t time_adj(size_t score_decrement_seconds);
     }
 }

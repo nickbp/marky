@@ -28,28 +28,34 @@ namespace marky {
      * just a toy project. */
     class Marky {
     public:
-        /* Sets up a Marky instance using the specified components and look
+        /* Sets up a Marky instance using the provided components and a look
          * size. The choice of components will determine how Marky scores and
          * stores any input. */
         Marky(backend_t backend, selector_t selector, scorer_t scorer,
                 size_t look_size);
         virtual ~Marky();
 
-        /* Adds the line (and its inter-word links) to the dataset.
+        /* Adds the line (and its inter-word snippets) to the dataset.
          * Returns false in the event of some error. */
         bool insert(const words_t& line);
 
-        /* Produces a line from the search word, or from a random word if the
-         * search word is unspecified. 'length_limit_words' and
-         * 'length_limit_chars' each allow setting APPROXIMATE limits on the
-         * length of the result, or no limit if zero.
-         * Produces an empty line if the search word wasn't found. Returns false
-         * in the event of some other error. */
+        /* Produces a line from the search word(s), or from a random word if the
+         * search words are unspecified.
+         *
+         * 'length_limit_words' and 'length_limit_chars' each allow specifying
+         * APPROXIMATE limits on the length of the result. If either limit is
+         * set to zero, that limit is disabled. One of the two limits MUST
+         * always be non-zero, to avoid infinite loops.
+         *
+         * Produces an empty line if the search words (if any) weren't found, or
+         * if no data was available. Returns false in the event of an error. */
         bool produce(words_t& line, const words_t& search = words_t(),
-                size_t length_limit_words = 0, size_t length_limit_chars = 0);
+                size_t length_limit_words = 100,
+                size_t length_limit_chars = 1000);
 
-        /* Tells the underlying backend to clean up any stale links it may have
-         * lying around. This may be called periodically to free up resources. */
+        /* Tells the underlying backend to clean up any stale (score=0) snippets
+         * it may have lying around. This may be called periodically to free up
+         * resources. */
         bool prune_backend();
 
     private:

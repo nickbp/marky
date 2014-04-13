@@ -22,6 +22,16 @@
 #include <marky/backend-map.h>
 #include <marky/config.h>
 
+TEST(Marky, disallow_no_limits) {
+    marky::backend_t backend(new marky::Backend_Map());
+    marky::scorer_t scorer = marky::scorers::no_adj();
+    marky::selector_t selector = marky::selectors::best_always();
+    marky::Marky marky(backend, selector, scorer, 1);
+
+    marky::words_t line_out;
+    EXPECT_FALSE(marky.produce(line_out, marky::words_t(), 0, 0));
+}
+
 TEST(Marky, basic_insert_get) {
     marky::backend_t backend(new marky::Backend_Map());
     marky::scorer_t scorer = marky::scorers::no_adj();

@@ -55,7 +55,40 @@ struct marky_Marky {
     marky::Marky wrapped;
 };
 
-// MARKY
+// WORDS
+
+marky_words_t* marky_words_new(size_t words_count) {
+    marky_words_t* words = new marky_words_t();
+    if (words == NULL) {
+        return NULL;
+    }
+    words->words = (char**)calloc(words_count, sizeof(char*));
+    if (words->words == NULL) {
+        delete words;
+        return NULL;
+    }
+    for (size_t i = 0; i < words_count; ++i) {
+        words->words[i] = NULL;
+    }
+    words->words_count = words_count;
+    return words;
+}
+
+void marky_words_free(marky_words_t* line) {
+    if (line == NULL) {
+        return;
+    }
+    assert((line->words == NULL) == (line->words_count == 0));
+    if (line->words != NULL) {
+        for (size_t i = 0; i < line->words_count; ++i) {
+            free(line->words[i]);
+        }
+        free(line->words);
+    }
+    delete line;
+}
+
+// MARKY FRONTEND
 
 marky_Marky* marky_new(marky_Backend* backend, marky_Selector* selector,
         marky_Scorer* scorer, size_t look_size) {
@@ -119,7 +152,7 @@ int marky_insert(marky_Marky* marky, const marky_words_t* line) {
 
 int marky_produce(marky_Marky* marky,
         marky_words_t** line_out, const marky_words_t* search/*=NULL*/,
-        size_t length_limit_words/*=0*/, size_t length_limit_chars/*=0*/) {
+        size_t length_limit_words/*=100*/, size_t length_limit_chars/*=1000*/) {
     assert(marky != NULL);
     marky::words_t search_cpp;
     if (search != NULL) {
@@ -152,7 +185,7 @@ int marky_prune_backend(marky_Marky* marky) {
     }
 }
 
-// BACKEND
+// BACKENDS
 
 marky_Backend* marky_backend_new_map(void) {
     marky::backend_t backend(new marky::Backend_Map());
@@ -189,7 +222,7 @@ void marky_backend_cacheable_free(marky_Backend_Cacheable* backend) {
     delete backend;
 }
 
-// SELECTOR
+// SELECTORS
 
 marky_Selector* marky_selector_new_best_always(void) {
     return new marky_Selector(marky::selectors::best_always());
@@ -205,7 +238,7 @@ void marky_selector_free(marky_Selector* selector) {
     delete selector;
 }
 
-// SCORER
+// SCORERS
 
 marky_Scorer* marky_scorer_new_no_adj(void) {
     return new marky_Scorer(marky::scorers::no_adj());
@@ -219,37 +252,4 @@ marky_Scorer* marky_scorer_new_time_adj(size_t score_decrement_seconds) {
 
 void marky_scorer_free(marky_Scorer* scorer) {
     delete scorer;
-}
-
-// WORDS
-
-marky_words_t* marky_words_new(size_t words_count) {
-    marky_words_t* words = new marky_words_t();
-    if (words == NULL) {
-        return NULL;
-    }
-    words->words = (char**)calloc(words_count, sizeof(char*));
-    if (words->words == NULL) {
-        delete words;
-        return NULL;
-    }
-    for (size_t i = 0; i < words_count; ++i) {
-        words->words[i] = NULL;
-    }
-    words->words_count = words_count;
-    return words;
-}
-
-void marky_words_free(marky_words_t* line) {
-    if (line == NULL) {
-        return;
-    }
-    assert((line->words == NULL) == (line->words_count == 0));
-    if (line->words != NULL) {
-        for (size_t i = 0; i < line->words_count; ++i) {
-            free(line->words[i]);
-        }
-        free(line->words);
-    }
-    delete line;
 }
