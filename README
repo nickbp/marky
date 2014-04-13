@@ -4,6 +4,6 @@ Building marky:
 2) "mkdir bin; cd bin"
 3) "cmake .."
 4) "make"
-5) See "bin/apps/marky-file"
+5) See "bin/apps/marky-file" or "py/example.py"
 
 View the project site for more information: http://nickbp.com/marky
