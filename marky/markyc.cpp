@@ -212,7 +212,7 @@ marky_Backend_Cacheable* marky_backend_new_sqlite_cacheable(char* db_file_path) 
 #endif
 }
 int marky_has_sqlite(void) {
-    return config::has_sqlite();
+    return config::has_sqlite() ? MARKY_SUCCESS : MARKY_FAILURE;
 }
 
 void marky_backend_free(marky_Backend* backend) {

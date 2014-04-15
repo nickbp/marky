@@ -23,6 +23,7 @@
 #include <iostream>
 
 #include <marky/config.h>
+#include <marky/build-config.h>
 #include <marky/marky.h>
 
 #include <marky/backend-map.h>

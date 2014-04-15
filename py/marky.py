@@ -161,7 +161,7 @@ class Marky:
         words_c.words = (ctypes.c_char_p * len(words))()
         for i in xrange(0, len(words)):
             # note, this is memory OWNED BY PYTHON. NOT a new alloc
-            words_c.words[i] = words[i]
+            words_c.words[i] = words[i].encode('utf-8')
         return words_c
 
 # -- Internal types
