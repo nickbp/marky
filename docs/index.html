@@ -1,0 +1,65 @@
+---
+layout: default
+title: marky
+---
+<p>Marky is a library for creating Markov chains from arbitrary text input. It comes with a simple command line front end, named <i>marky-file</i>, which can be used to read text files and produce entertaining output.</p>
+
+<p>The library is divided into several discrete components, allowing developers and advanced users to easily customize and extend its behavior. It currently supports a few scoring and selection methods, and temporary (hash map) or persistent (SQLite) storage of its state. For a description of Marky's internal structure, take a look at the <a href="docs.html">documentation</a>.</p>
+
+<p>It's also pretty fast. In a Release build on my 3 year old laptop, the <i>marky-file</i> tool imports all of "My Antonia" and produces a chain in about 0.25 seconds. If the data is imported into a SQLite db (~3 seconds), it takes around 0.1 seconds to produce a chain from that. Here are some examples:</p>
+
+<p class="subheader">Direct Printing</p>
+
+<p class="code">apps$ time ./marky-file -p ../tests/data-my_antonia.txt<br/>
+The windy springs and he used to the check.<br/>
+<br/>
+real	0m0.255s<br/>
+user	0m0.224s<br/>
+sys	0m0.028s<br/>
+<br/>
+apps$ time ./marky-file -p ../tests/data-my_antonia.txt -s springs<br/>
+While we could not notice indicating that breathless, brilliant heat it had a royal house; the smell the best horse, and tried to do go back porch, resting against hot springs and the cornfields with open window.<br/>
+<br/>
+real	0m0.255s<br/>
+user	0m0.236s<br/>
+sys	0m0.016s</p>
+
+<p class="subheader">SQLite Caching</p>
+
+<p>Create DB:</p>
+
+<p class="code">apps$ time ./marky-file -i ../tests/data-my_antonia.txt<br/>
+<br/>
+real	0m3.214s<br/>
+user	0m2.692s<br/>
+sys	0m0.500s</p>
+
+<p>Produce from DB:</p>
+
+<p class="code">apps$ time ./marky-file -e<br/>
+She was so joyous and glitter and velvety.<br/>
+<br/>
+real	0m0.098s<br/>
+user	0m0.084s<br/>
+sys	0m0.012s<br/>
+<br/>
+apps$ time ./marky-file -e<br/>
+I was so deep under the years and sheet-draped garments on her propped my promise, of that had heard grandmother told me with Frances, after they could smell of its height, her hands.<br/>
+<br/>
+real	0m0.104s<br/>
+user	0m0.096s<br/>
+sys	0m0.004s<br/>
+<br/>
+apps$ time ./marky-file -e<br/>
+On his sledge overturned, with you.<br/>
+<br/>
+real	0m0.084s<br/>
+user	0m0.080s<br/>
+sys	0m0.000s<br/>
+<br/>
+apps$ time ./marky-file -e -s you.<br/>
+There, without you.<br/>
+<br/>
+real	0m0.003s<br/>
+user	0m0.000s<br/>
+sys	0m0.000s</p>

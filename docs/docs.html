@@ -1,0 +1,41 @@
+---
+layout: default
+title: marky - docs
+---
+<p class="header">Components<p>
+
+Marky's functionality can be best understood by seeing how its underlying components interact.
+
+<p class="subheader">Snippets</p>
+
+<p>A <i>Snippet</i> is a sequence of two or more words, along with a few variables describing that sequence's state, such as a "score" and the last time the snippet was encountered in input data. A snippet with a high score is more likely to be selected in Markov chains (depending on the Selector, see below), and a snippet with a zero score is due to be pruned from the data. The starting and/or ending words in the sequence may be empty, signifying that the snippet in question marks the beginning and/or end of a line. When a snippet is encountered in the input data, its score is incremented by +1, minus any adjustment by the Scorer.</p>
+
+<p class="subheader">Scorers</p>
+
+<p>A <i>Scorer</i> is a function which adjusts and updates a snippet's score whenever it's encountered in input data. It does this by comparing the current state to the state when the snippet was last encountered.<br/>
+For example, let's say we want to adjust the score of the snippet "Hello"-"world!". The snippet was last encountered 7 hours ago, and we've been programmed to decrease scores by 1 point for every hour they age. So the adjusted score would be 10-7 = 3.</p>
+<p>A different scorer might instead adjust scores by "snippet age", which measures the number of other snippets that have been inputted since we last saw the snippet in question. For example, if 10,000 snippets have been updated since the last time "Hello"-"world!" was encountered, and the Scorer adjusted scores by 1 point for every 5,000 words, then the adjusted score would be 10-2 = 8.</p>
+<p>In either of these cases, a higher adjustment factor will lead to snippets getting demoted and pruned more quickly, and vice versa. Such adjustments can also be disabled entirely if such pruning is undesired.</p>
+
+<p class="subheader">Selectors</p>
+
+<p>A <i>Selector</i> is a function used when building chains to decide which snippets to include in the chain. For example, we might be growing a chain which currently consists of the word "Hello". The candidate snippets could be "Hello"-"world!" and "Hello"-"dog!", each of which would have a score. Depending on the Selector, it could ignore the scores and be completely randomized, or it could always choose the best scoring snippet and be completely deterministic, or it could select according to some weighting in between those two extremes. The Selector therefore determines the "randomness" of the produced chain.</p>
+
+<p class="subheader">Backends</p>
+
+<p>A <i>Backend</i> keeps a tally of the current snippets, their scores and states, and the overall system state. Backends include support for periodically pruning snippets with zero scores. Currently implemented backends are a temporary hash map or persistent storage to a SQLite db file.</p>
+<p>As an implementation detail, backends may implement the "ICacheable" interface, which allows the backend to be wrapped in a hash map-based cache. This cache allows efficient use of a relatively slow backend; data is only retrieved when not present in the cache, and data is only written to the underlying backend when the cache is told to flush or close. For example, this is supported by the SQLite backend to avoid redundant retrievals and to allow updates to be performed via bulk transactions.</p>
+
+<p class="header">Operations</p>
+
+<p class="subheader">Inserting Lines</p>
+
+<p>For each line, all sub-sequences for that line are passed to the Backend, including a "start" pair and an "end" pair. For each of those pairs, the backend either increments and adjusts the matching Snippet's score using the Scorer, or creates a new Snippet with a score of 1 if no matching Snippet was found.</p>
+
+<p class="subheader">Retrieving Chains</p>
+
+<p>If a search word was specified, a lookup is performed for any snippets which begin or end with that word. Using the Selector, the output chain is "grown" in both directions from that word until "start" and "end" snippets are selected or until a specified length limit is reached. If no search word was specified, a random snippet is chosen, and a chain is grown from that snippet in a similar manner.</p>
+
+<p class="header">Using Marky</p>
+
+<p>Given an understanding of the above components, Marky itself is fairly straightforward to use. You just need to pick a Scorer, Selector, and Backend relevant to your application. Or you can create and use a custom component of your own. To see some example usage, just take a look at the <i>marky-file</i> code.</p>
